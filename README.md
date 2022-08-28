@@ -29,7 +29,7 @@ Requirements:
 
 You must install it before doing anything described here!
 
-First, download the source code for the latest version of OpenBureau on the [Releases page](releases). After that, run the following command inside the source folder to install the dependencies:
+First, download the source code for the latest version of OpenBureau on the [Releases page](https://github.com/LeadRDRK/OpenBureau/releases). After that, run the following command inside the source folder to install the dependencies:
 ```
 npm install
 ```
