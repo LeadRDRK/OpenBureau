@@ -98,7 +98,7 @@ let commands: {[key: string]: (state: State, args: string[]) => void} = {
         }
 
         user1.position = user2.position;
-        ++user1.position.y; // just drop them from up high so they won't get stuck
+        user1.position.y += 0x100;
         user1.ss.write([{id1: user1.id, id2: user1.id, bcId: user1.bcId, position: user1.position}]);
         Log.info(`Teleported ${user1.name} to ${user2.name}`);
     },
