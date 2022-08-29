@@ -187,18 +187,21 @@ As the name implies, this is the most common opcode and is used for a number of 
 
 The type defines what the content contains. Known types:
 ```
-    REQUEST         = 0x10270000,
-    CHAT_SEND       = 0x09000000,
-    NAME_CHANGE     = 0x0D000000,
-    AVATAR_CHANGE   = 0x0E000000,
-    ROTATION_UPDATE = 0x02000000,
-    SLEEP_UPDATE    = 0x0C000000
+    REQUEST          = 0x10270000,
+    CHAT_SEND        = 0x09000000,
+    NAME_CHANGE      = 0x0D000000,
+    AVATAR_CHANGE    = 0x0E000000,
+    ROTATION_UPDATE  = 0x02000000,
+    CHARACTER_UPDATE = 0x0C000000,
+    VOICE_STATE      = 0x12000000,
+    UNNAMED_1        = 0x10000000,
+    PRIVATE_CHAT     = 0x0F000000
 ```
 
 Possible subtype values are 0, 1, 2 and 3. They define what to do with the message.
 
 - If subtype is 0 or 1, the message should be broadcasted to other clients.
-- If subtype is 2 or 3, the message should be sent back to the client only.
+- If subtype is 2 or 3, the message should be sent back to the client with the broadcast ID specified in the message. Usually, this is the ID of the same user, however some content types might have a different one (such as `PRIVATE_CHAT`)
 
 Each type has a specific subtype. Note that when broadcasting messages to other clients, ID 1 and ID 2 must be set to those of the client being sent to.
 
@@ -280,6 +283,41 @@ The data will look something like this: `sleep:0 1:000000000000:58:0:`
     - The final value is user's medal, which is awarded if they have spent enough time using that avatar (none = 0, happy = 1, lucky = 2, lovely = 3).
 
 Thanks to [barra](https://barrarchiverio.7m.pl/) for providing the information here.
+
+### VOICE_STATE
+Used to update the voice chat state.
+
+| Section | Size | Type |
+| --- | --- | --- |
+| Unknown | 4 | uint32 |
+| Unknown | 1 | uint8 |
+| State | 1 | uint8 |
+
+Both unknown values always seem to be set to 1.
+
+A state value of 2 seems to stand for Disabled, while 3 stands for Enabled.
+
+### UNNAMED_1
+Unknown purpose. Sent by Browser v2.0 alpha 2 or later upon connecting to the server, a bit after sending the `CMSG_NEW_USER` packet. Probably used for voice chat?
+
+### PRIVATE_CHAT
+Used to initiate and send private chat messages to other users.
+
+| Section | Size | Type |
+| --- | --- | --- |
+| ID type | 2 | uint16 |
+| Broadcast ID | 2 | uint16 |
+| Message | ~ | string |
+
+Note that the broadcast ID in the header of the message is for the user that the message is being sent to, while the broadcast ID here is for the user that sent the message.
+
+The message may contain special values that starts with `%%` to communicate with the client application itself. Possible values:
+- `%%REQ`: Used to initiate a request to chat with another user. Also used as a keep-alive message which is sent periodically.
+- `%%RINGING`: Let the sender know that the end user is being prompted for the chat request.
+- `%%ACCEPT`: Accept the chat request.
+- `%%REJECT`: Reject the chat request.
+- `%%OK`: Used to reply to a keep-alive `%%REQ` message.
+- `%%END`: Used by either clients to end the chat session.
 
 ## CMSG_STATE_CHANGE
 Used to announce a player state change.

@@ -33,4 +33,5 @@ n:I HATE SAPARI!!!!
 - `NO_MULTI`: Disallow multiple connections from the same client. Value is a boolean.
 - `AURA_RADIUS`: The radius of the aura, or how far away each user can be seen. Set to 0 to disable the aura system. Default: 0.
 - `USER_TIMEOUT`: How long it takes before the server disconnects from a client if they don't identify themselves, in milliseconds. Default: 10000
+- `LOG_PRIVATE_CHAT`: Log private chat messages. Value is a boolean. If `VERBOSE` is enabled, special message values will also be logged.
 - `VERBOSE`: Enable verbose logging. Value is a boolean.

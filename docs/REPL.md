@@ -26,6 +26,21 @@ The server is now waiting for your input and the log has been paused. Run a comm
 - bannedips: Get the list of banned IPs.
 - bannednames: Get the list of banned names.
 
+## Tab completion
+Too lazy to write the entire command name? You can autocomplete it by hitting Tab.
+
+Example:
+```
+> tel
+```
+- Hit Tab
+```
+> teleport
+```
+
+## History
+You can access the command history by hitting the Up and Down arrow keys (up for less recent commands, down for more recent commands).
+
 ## Examples
 - Teleport a player named "Finger" to another player named "Walter"
     - Use the `users` command to show the list of users:
