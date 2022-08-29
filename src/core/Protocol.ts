@@ -45,7 +45,7 @@ enum CDataType {
     AVATAR_CHANGE    = 0x0E000000,
     ROTATION_UPDATE  = 0x02000000,
     CHARACTER_UPDATE = 0x0C000000,
-    VOICE            = 0x12000000,
+    VOICE_STATE      = 0x12000000,
     UNNAMED_1        = 0x10000000
 }
 
@@ -363,7 +363,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 Log.info(`[CHAT] ${message}`);
                 break;
 
-            case CDataType.VOICE:
+            case CDataType.VOICE_STATE:
                 let value = cData.readUint8(5);
                 if (value == 2)
                     Log.verbose("voice off");
