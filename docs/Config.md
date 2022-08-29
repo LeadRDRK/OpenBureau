@@ -1,6 +1,8 @@
 # Config
 Configuration can be done through text files or environment variables. There are two files that can be used to configure the server: `config.txt` and `banlist.txt`
 
+Config properties set in the environment variables have higher privileges than those in the config file, so they can be used to override and quickly test out config values before actually writing them to a file.
+
 ## config.txt
 Syntax: Each property's name and value are separated by a `=`, each entry is separated by a newline.
 
@@ -28,5 +30,7 @@ n:I HATE SAPARI!!!!
 - `HOST`: The server's host. If in doubt, leave as default. Default: 0.0.0.0
 - `MAX_CONN`: Maximum number of concurrent connections. Default: 256. Setting it to a value higher than 256 is useless as it is limited by design.
 - `NO_REPL`: Disable the REPL. Value is a boolean.
+- `NO_MULTI`: Disallow multiple connections from the same client. Value is a boolean.
 - `AURA_RADIUS`: The radius of the aura, or how far away each user can be seen. Set to 0 to disable the aura system. Default: 0.
+- `USER_TIMEOUT`: How long it takes before the server disconnects from a client if they don't identify themselves, in milliseconds. Default: 10000
 - `VERBOSE`: Enable verbose logging. Value is a boolean.

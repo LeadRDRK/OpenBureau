@@ -259,18 +259,27 @@ Used to update the character's rotation.
 
 It is not known how the rotation data should be interpreted. If we were to assume that all of the values are 4 bytes floats, then there would be 12 float values, or a 4x3 matrix.
 
-### SLEEP_UPDATE
+### CHARACTER_UPDATE
 - Subtype = 1
 
-Used to update the player's sleep state. This is a companion to `CMSG_STATE_CHANGE`, since it can't actually broadcast the user's state to other players.
+Used to update the character data. This is also a companion to `CMSG_STATE_CHANGE`, since it can't actually broadcast the user's state to other players.
 
 | Section | Size | Type |
 | --- | --- | --- |
-| Sleep state | ~ | string |
+| Data | ~ | string |
 
-It is not known how the sleep state should be interpreted. It looks something like this: `sleep:0 1:000000000000:26:0:`
+The data will look something like this: `sleep:0 1:000000000000:58:0:`
 
-Nevertheless, it is not important to know what it actually means.
+- The first part (sleep:0) tells whether the character is sleeping or not (1 for true, 0 for false)
+- The second part contains the character data, each part separated by a colon:
+    - The first value (1) is the number of the avatar.
+    - Next is the body parts's color and scale:
+        - Each body part has two values, the first value is the color, the second value is the scale.
+        - The amount of values depends on how much body parts the user's avatar has.
+    - After that is the minutes spent using that particular avatar (58)
+    - The final value is user's medal, which is awarded if they have spent enough time using that avatar (none = 0, happy = 1, lucky = 2, lovely = 3).
+
+Thanks to [barra](https://barrarchiverio.7m.pl/) for providing the information here.
 
 ## CMSG_STATE_CHANGE
 Used to announce a player state change.
@@ -280,13 +289,16 @@ Used to announce a player state change.
 | State | 1 | uint8 |
 
 Known state values:
-- `0x03`: Leaving
-- `0x04`: Active
-- `0x05`: Sleep
+- `0x00`: NOT_CONNECTED
+- `0x01`: CONNECTING
+- `0x02`: CONNECTED
+- `0x03`: DISCONNECTING
+- `0x04`: ACTIVE
+- `0x05`: SLEEP
 
-Active and Sleep can be activated manually by the user. The Leaving state is triggered when the Browser is closing itself and will terminate the connection shortly.
+Active and Sleep can be activated manually by the user. The Disconnecting state is triggered when the Browser is closing itself and will terminate the connection shortly. Other states are used internally by the client and are not sent to the server.
 
-If the state is Active or Sleep, the client will follow up with another packet containing a [`MSG_COMMON`](#msg_common) section to [send the Sleep State](#sleep_update).
+If the state is Active or Sleep, the client will follow up with another packet containing a [`MSG_COMMON`](#msg_common) section to [send the sleep state](#character_update).
 
 ## SMSG_UNNAMED_1
 Unknown purpose.
@@ -332,7 +344,7 @@ The server can also send a Position Update message to update a client's own char
 It is not known how the coordinates should be interpreted. The first two bits of the value seems to be used as signbits, with `0xFF` for negative, `0x00` for positive. The other 3 bytes varies wildly depending on the position.
 
 # Limitations
-By design, the protocol is limited to 256 concurrent users. This is because, the `hello` packet that the server sends only uses an uint8 to send the connection ID; effectively limiting its range from 0 to 255, thus limiting it to 256 possible values. However, it is still entirely possible for a server to handle more than that, as TCP doesn't limit the amount of active connections, though it is impractical to do so. This is where WSL comes into use.
+By design, the protocol is limited to 256 concurrent users. This is because, the `hello` packet that the server sends only uses an uint8 to send the connection ID; effectively limiting its range from 0 to 255, thus limiting it to 256 possible values. However, it is still entirely possible for a server to handle more than that, as TCP doesn't limit the amount of active connections, though it is impractical to do so. *This is where WLS comes into use.*
 
 # License
 This documentation is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0)

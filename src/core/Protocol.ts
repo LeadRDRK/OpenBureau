@@ -39,12 +39,12 @@ export interface PositionMsg extends MessageBase {
 export type MessageArray = (GeneralMsg | PositionMsg)[];
 
 enum CDataType {
-    REQUEST         = 0x10270000,
-    CHAT_SEND       = 0x09000000,
-    NAME_CHANGE     = 0x0D000000,
-    AVATAR_CHANGE   = 0x0E000000,
-    ROTATION_UPDATE = 0x02000000,
-    SLEEP_UPDATE    = 0x0C000000
+    REQUEST          = 0x10270000,
+    CHAT_SEND        = 0x09000000,
+    NAME_CHANGE      = 0x0D000000,
+    AVATAR_CHANGE    = 0x0E000000,
+    ROTATION_UPDATE  = 0x02000000,
+    CHARACTER_UPDATE = 0x0C000000
 }
 
 interface CommonData {
@@ -150,12 +150,12 @@ function buildCommonData(data: CommonData) {
     return buf;
 }
 
-function buildSleepUpdateMsg(id: number, bcId: number, sleepState: string): GeneralMsg {
-    let buf = Buffer.allocUnsafe(Buffer.byteLength(sleepState, "utf8") + 1);
-    writeString(buf, sleepState, 0);
+function buildCharUpdateMsg(id: number, bcId: number, characterData: string): GeneralMsg {
+    let buf = Buffer.allocUnsafe(Buffer.byteLength(characterData, "utf8") + 1);
+    writeString(buf, characterData, 0);
     return {
         id1: id, id2: id, type: Opcode.MSG_COMMON,
-        content: buildCommonData({idType: 0x00, bcId, type: CDataType.SLEEP_UPDATE, subtype: 1, content: buf})
+        content: buildCommonData({idType: 0x00, bcId, type: CDataType.CHARACTER_UPDATE, subtype: 1, content: buf})
     };
 }
 
@@ -163,7 +163,7 @@ function buildUserInitMsgs(id: number, user: User): MessageArray {
     let bcId = user.bcId;
     let ujContent = userJoinedContent(bcId, user.name, user.avatar);
     let msgs: MessageArray = [
-        {id1: user.id, id2: id, type: Opcode.SMSG_USER_JOINED, content: ujContent},
+        {id1: user.id, id2: id, type: Opcode.SMSG_USER_JOINED, content: ujContent}
     ];
 
     if (user.position)
@@ -174,8 +174,8 @@ function buildUserInitMsgs(id: number, user: User): MessageArray {
         msgs.push({id1: id, id2: id, type: Opcode.MSG_COMMON, content: rtContent});
     }
 
-    if (user.sleepState)
-        msgs.push(buildSleepUpdateMsg(id, bcId, user.sleepState));
+    if (user.characterData)
+        msgs.push(buildCharUpdateMsg(id, bcId, user.characterData));
 
     return msgs;
 }
@@ -242,6 +242,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
 
         let [name, avatar] = res;
         if (BanList.isNameBanned(name)) {
+            Log.verbose(`Rejecting new user ${name}, name has been banned`);
             ss.socket.destroy();
             return i;
         }
@@ -343,8 +344,8 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 user.rotation = Buffer.from(content.subarray(9, 57));
                 break;
 
-            case CDataType.SLEEP_UPDATE:
-                user.sleepState = args[0];
+            case CDataType.CHARACTER_UPDATE:
+                user.characterData = args[0];
                 break;
 
             case CDataType.CHAT_SEND:

@@ -16,7 +16,7 @@ The server is now waiting for your input and the log has been paused. Run a comm
 - stop: Stop the server.
 - users: Get the list of users currently in the server.
 - getids: Get the IDs of users with the specified username. Usage: `getids <name>`
-- chat: Send a system chat message.
+- chat: Send a system chat message. Usage: `chat <message>`
 - teleport: Teleport a player to another. Usage: `teleport <id1> <id2>`
 - kick: Kick a player. Usage: `kick <id>`
 - ban: Ban a player by their IP address. Usage: `ban <user id or ip address>`
@@ -43,6 +43,7 @@ The server is now waiting for your input and the log has been paused. Run a comm
     > teleport 0 1
     [INFO] Teleported Finger to Walter
     ```
+    - Tip: You can also use `getids` to get their IDs.
 - Kick a user
     - Use the `users` command to show the list of users.
     - Check the ID of the user you want to kick (we'll use 5 as an example ID here), then run:
@@ -61,3 +62,8 @@ The server is now waiting for your input and the log has been paused. Run a comm
     > banname Foobar
     [INFO] Foobar has been banned
     ```
+- Send a system message
+    ```
+    chat Hello world!
+    ```
+    - "\[System] Hello world!" will show up in the users's chat box.

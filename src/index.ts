@@ -2,16 +2,26 @@ import net from "node:net";
 import { Log, Config, Protocol, State, SocketState, Repl, BanList } from "./core";
 import nodeCleanup from "node-cleanup";
 
-const USER_TIMEOUT = 5000;
+let USER_TIMEOUT: number;
 
 let state: State;
+let ipSet = Config.isEnabled("NO_MULTI") ? new Set<string> : undefined;
 
 async function listener(socket: net.Socket) {
     let a = socket.address();
     let address = ("address" in a) ? a.address : "<unknown>";
     if (BanList.isIpBanned(address)) {
+        Log.verbose(`Rejecting connection from ${address}, IP has been banned`);
         socket.destroy();
         return;
+    }
+    if (Config.isEnabled("NO_MULTI")) {
+        if (ipSet!.has(address)) {
+            Log.verbose(`Rejecting connection from ${address}, multiple connections are not allowed`);
+            socket.destroy();
+            return;
+        }
+        ipSet!.add(address);
     }
 
     let id = state.getNewId();
@@ -30,6 +40,7 @@ async function listener(socket: net.Socket) {
     .on("error", Log.error)
     .on("close", () => {
         state.removeUser(id);
+        if (Config.isEnabled("NO_MULTI")) ipSet!.delete(address);
         Log.verbose(`${address} disconnected`);
     });
 
@@ -52,6 +63,7 @@ function main() {
     const PORT = +Config.get("PORT", "5126");
     const HOST = Config.get("HOST", "0.0.0.0");
     const MAX_CONN = +Config.get("MAX_CONN", "256"); // Limited to 256 by design
+    USER_TIMEOUT = +Config.get("USER_TIMEOUT", "10000");
 
     if (!Number.isInteger(PORT)) {
         Log.error("Invalid port provided. Aborting");
@@ -60,6 +72,11 @@ function main() {
 
     if (!Number.isInteger(MAX_CONN)) {
         Log.error("Invalid max connection count. Aborting");
+        return;
+    }
+
+    if (!Number.isInteger(USER_TIMEOUT)) {
+        Log.error("Invalid user timeout value. Aborting");
         return;
     }
 

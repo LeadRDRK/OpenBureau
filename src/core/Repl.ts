@@ -67,13 +67,15 @@ let commands: {[key: string]: (state: State, args: string[]) => void} = {
     },
 
     chat(state: State, args: string[]) {
+        const chatMsg = `[System] ${args.join(" ")}`;
         state.broadcast(user => {
             let ujContent = Protocol.userJoinedContent(SYSTEM_BCID, "System", "avtwrl/01cat.wrl");
             return [
                 {id1: user.id, id2: user.id, type: Protocol.Opcode.SMSG_USER_JOINED, content: ujContent},
-                Protocol.buildChatSendMsg(user.id, SYSTEM_BCID, `[System] ${args.join(" ")}`)
+                Protocol.buildChatSendMsg(user.id, SYSTEM_BCID, chatMsg)
             ]
         });
+        Log.info(`[CHAT] ${chatMsg}`);
     },
 
     teleport(state: State, args: string[]) {
@@ -242,7 +244,7 @@ let commandHelp: {[key: string]: string} = {
     stop: "Stop the server",
     users: "Get the list of users currently in the server",
     getids: "Get the IDs of users with the specified username. Usage: getids <name>",
-    chat: "Send a system chat message",
+    chat: "Send a system chat message. Usage: chat <message>",
     teleport: "Teleport a player to another. Usage: teleport <id1> <id2>",
     kick: "Kick a player. Usage: kick <id>",
     ban: "Ban a player by their IP address. Usage: ban <user id or ip address>",
