@@ -46,7 +46,8 @@ enum CDataType {
     ROTATION_UPDATE  = 0x02000000,
     CHARACTER_UPDATE = 0x0C000000,
     VOICE_STATE      = 0x12000000,
-    UNNAMED_1        = 0x10000000
+    UNNAMED_1        = 0x10000000,
+    PRIVATE_CHAT     = 0x0F000000
 }
 
 interface CommonData {
@@ -290,21 +291,22 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
     case Opcode.MSG_COMMON: {
         let idType = content.readUint16LE(0);
         let bcId = content.readUint16LE(2);
+        let type_ = content.readUInt32LE(4);
+        let subtype = content.readUint8(8);
+
         // not sure if this is the right way to name it
-        let isServerRequest = (idType == 0xFFFF && bcId == 0xF1D8);
+        const isServerRequest = (idType == 0xFFFF && bcId == 0xF1D8);
+        const bcIdDiffer = (type_ == CDataType.PRIVATE_CHAT);
 
         let user: User | undefined = state.users[ss.id];
         if (idType == 0) {
             // Check if user has this broadcast ID
-            if (user?.bcId != bcId)
+            if (!bcIdDiffer && user?.bcId != bcId)
                 break;
         }
-        else if (!isServerRequest) {
+        else if (!isServerRequest)
             break;
-        }
 
-        let type_ = content.readUInt32LE(4);
-        let subtype = content.readUint8(8);
         if (type_ == CDataType.REQUEST) {
             // Type 0x10270000 seems to have an extra byte for some reason?
             // Content: 2 strings, and another bcId value at the end
@@ -326,17 +328,17 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
 
             switch (type_) {
             case CDataType.NAME_CHANGE: {
-                let [newName] = readStrings(cData, 1);
+                const [newName] = readStrings(cData, 1);
                 if (!newName) return i;
 
-                let oldName = user.name;
+                const oldName = user.name;
                 user.name = newName;
                 Log.info(`${oldName} changed their name to ${user.name}`);
                 break;
             }
 
             case CDataType.AVATAR_CHANGE:
-                let [newAvatar] = readStrings(cData, 1);
+                const [newAvatar] = readStrings(cData, 1);
                 if (!newAvatar) return i;
 
                 user.avatar = newAvatar;
@@ -350,29 +352,48 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 break;
 
             case CDataType.CHARACTER_UPDATE:
-                let [cd] = readStrings(cData, 1);
+                const [cd] = readStrings(cData, 1);
                 if (!cd) return i;
 
                 user.characterData = cd;
                 break;
 
             case CDataType.CHAT_SEND:
-                let [message] = readStrings(cData, 1);
+                const [message] = readStrings(cData, 1);
                 if (!message) return i;
 
                 Log.info(`[CHAT] ${message}`);
                 break;
 
-            case CDataType.VOICE_STATE:
+            case CDataType.VOICE_STATE: {
                 let value = cData.readUint8(5);
                 if (value == 2)
-                    Log.verbose("voice off");
+                    Log.verbose("voice disabled");
                 else if (value == 1)
-                    Log.verbose("voice on");
+                    Log.verbose("voice enabled");
                 break;
+            }
             
             case CDataType.UNNAMED_1:
                 break;
+            
+            case CDataType.PRIVATE_CHAT: {
+                const idType = cData.readUint16LE(0);
+                const fromBcId = cData.readUint16LE(2);
+                const [message] = readStrings(cData.subarray(4), 1);
+
+                if (!message || idType != 0x00 || fromBcId != user?.bcId)
+                    return i;
+                
+                if (Config.isEnabled("LOG_PRIVATE_CHAT")) {
+                    if (message.startsWith("%%"))
+                        Log.verbose(`[PCHAT] ${message}`);
+                    else
+                        Log.info(`[PCHAT] ${message}`);
+                }
+
+                break;
+            }
             
             default: // Unrecognized type, don't do anything
                 Log.verbose(`Unrecognized common data type ${type_}`);
@@ -392,12 +413,23 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             break;
 
         case 2:
-        case 3:
-            // Echo back to client
-            ss.write([
-                {id1: ss.id, id2: ss.id, type: Opcode.MSG_COMMON, content}
-            ])
+        case 3: {
+            if (bcIdDiffer) {
+                // Message is meant to be sent to another user
+                // Find user with the specified broadcast id
+                for (const id_ in state.users) {
+                    const id = +id_;
+                    const user = state.users[id];
+                    if (user.bcId == bcId)
+                        user.ss.write([{id1: id, id2: id, type: Opcode.MSG_COMMON, content}]);
+                }
+            }
+            else {
+                // Message should be echoed back
+                ss.write([{id1: ss.id, id2: ss.id, type: Opcode.MSG_COMMON, content}]);
+            }
             break;
+        }
         
         case 4:
             // Don't do anything(?)
