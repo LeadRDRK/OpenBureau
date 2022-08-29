@@ -44,7 +44,9 @@ enum CDataType {
     NAME_CHANGE      = 0x0D000000,
     AVATAR_CHANGE    = 0x0E000000,
     ROTATION_UPDATE  = 0x02000000,
-    CHARACTER_UPDATE = 0x0C000000
+    CHARACTER_UPDATE = 0x0C000000,
+    VOICE            = 0x12000000,
+    UNNAMED_1        = 0x10000000
 }
 
 interface CommonData {
@@ -269,7 +271,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             {id1: ss.id, id2: ss.id, type: Opcode.SMSG_BROADCAST_ID, content: bcIdBuf}
         ];
 
-        // Also send info of other users if the aura system is not enabled
+        // Also immediately send info of other users if the aura system is not enabled
         if (!auraRadius) {
             for (const id in state.users) {
                 let user = state.users[id];
@@ -320,39 +322,60 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
         else {
             // All other types must be user-specific
             if (isServerRequest) break;
-
-            // Content: 1 string (except for ROTATION_UPDATE)
-            let args = readStrings(content.subarray(9), 1);
-            if (args.length != 1 && type_ != CDataType.ROTATION_UPDATE) break;
+            let cData = content.subarray(9);
 
             switch (type_) {
             case CDataType.NAME_CHANGE: {
+                let [newName] = readStrings(cData, 1);
+                if (!newName) return i;
+
                 let oldName = user.name;
-                user.name = args[0];
+                user.name = newName;
                 Log.info(`${oldName} changed their name to ${user.name}`);
                 break;
             }
 
             case CDataType.AVATAR_CHANGE:
-                user.avatar = args[0];
+                let [newAvatar] = readStrings(cData, 1);
+                if (!newAvatar) return i;
+
+                user.avatar = newAvatar;
                 Log.info(`${user.name} changed their avatar to ${user.avatar}`);
                 break;
 
             case CDataType.ROTATION_UPDATE: 
                 // TODO: properly interpret rotation values
                 // for now store it as a buffer
-                user.rotation = Buffer.from(content.subarray(9, 57));
+                user.rotation = Buffer.from(cData.subarray(0, 48));
                 break;
 
             case CDataType.CHARACTER_UPDATE:
-                user.characterData = args[0];
+                let [cd] = readStrings(cData, 1);
+                if (!cd) return i;
+
+                user.characterData = cd;
                 break;
 
             case CDataType.CHAT_SEND:
-                Log.info(`[CHAT] ${args[0]}`);
+                let [message] = readStrings(cData, 1);
+                if (!message) return i;
+
+                Log.info(`[CHAT] ${message}`);
+                break;
+
+            case CDataType.VOICE:
+                let value = cData.readUint8(5);
+                if (value == 2)
+                    Log.verbose("voice off");
+                else if (value == 1)
+                    Log.verbose("voice on");
+                break;
+            
+            case CDataType.UNNAMED_1:
                 break;
             
             default: // Unrecognized type, don't do anything
+                Log.verbose(`Unrecognized common data type ${type_}`);
                 return i;
 
             }
@@ -375,6 +398,15 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 {id1: ss.id, id2: ss.id, type: Opcode.MSG_COMMON, content}
             ])
             break;
+        
+        case 4:
+            // Don't do anything(?)
+            break;
+
+        default:
+            Log.verbose(`Unrecognized common data subtype ${subtype}`);
+            break;
+
         }
         break;
     }
