@@ -1,5 +1,5 @@
 import { State, Log, Protocol, UserState, BanList } from ".";
-import readline from "node:readline/promises";
+import readline from "node:readline";
 import { stdin, stdout } from 'node:process';
 import net from "node:net";
 
