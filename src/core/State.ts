@@ -1,6 +1,7 @@
 import net from "node:net";
 import crypto from "node:crypto"
 import { Log, Protocol, MessageArray, User } from ".";
+import { IPCServer } from "../ipc";
 
 class IdSet extends Set<number> {
     last: number = -1;
@@ -27,6 +28,7 @@ export class State {
     sockets: {[key: number]: net.Socket} = {};
     idSet = new IdSet;
     bcIdSet = new Set<number>;
+    ipc?: IPCServer;
 
     broadcast(callback: BcMsgCallback) {
         let buf: Buffer | undefined;

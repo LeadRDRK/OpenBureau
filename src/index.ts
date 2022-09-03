@@ -1,11 +1,12 @@
 import net from "node:net";
 import { Log, Config, Protocol, State, SocketState, Repl, BanList } from "./core";
+import { IPCServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
 
 let USER_TIMEOUT: number;
 
 let state: State;
-let ipSet = Config.isEnabled("NO_MULTI") ? new Set<string> : undefined;
+let ipSet: Set<string>;
 
 async function listener(socket: net.Socket) {
     let a = socket.address();
@@ -64,6 +65,10 @@ function main() {
     const HOST = Config.get("HOST", "0.0.0.0");
     const MAX_CONN = +Config.get("MAX_CONN", "256"); // Limited to 256 by design
     USER_TIMEOUT = +Config.get("USER_TIMEOUT", "10000");
+    const IPC_SOCKET = Config.get("IPC_SOCKET");
+    
+    if (Config.isEnabled("NO_MULTI"))
+        ipSet = new Set<string>;
 
     if (!Number.isInteger(PORT)) {
         Log.error("Invalid port provided. Aborting");
@@ -82,6 +87,11 @@ function main() {
 
     state = new State;
     Protocol.init();
+
+    if (IPC_SOCKET) {
+        state.ipc = new IPCServer({});
+        state.ipc.init(IPC_SOCKET, () => Log.info(`IPC socket listening at ${IPC_SOCKET}`));
+    }
 
     // TypeScript is somehow missing the definitions for keepAlive...
     // @ts-ignore
