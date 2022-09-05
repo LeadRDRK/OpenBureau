@@ -1,9 +1,9 @@
-export type IPCHandlers = {[key: string]: (...args: any[]) => IPCData | void};
-export interface IPCData {
+export type IpcHandlers = {[key: string]: (...args: any[]) => IpcData | void};
+export interface IpcData {
     type: string;
     args: any[];
     tag?: any;
 }
-export function isIPCData(object: any): object is IPCData {
+export function isIpcData(object: any): object is IpcData {
     return (typeof object == "object" && typeof object.type == "string" && Array.isArray(object.args));
 }

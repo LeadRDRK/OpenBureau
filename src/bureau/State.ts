@@ -2,7 +2,7 @@ import net from "node:net";
 import crypto from "node:crypto"
 import { Protocol, MessageArray, User } from ".";
 import { Log, IdSet } from "../core";
-import { IPCServer } from "../ipc";
+import { IpcServer } from "../ipc";
 
 export type BcMsgCallback = (user: User) => MessageArray | undefined;
 
@@ -11,7 +11,7 @@ export class State {
     sockets: {[key: number]: net.Socket} = {};
     idSet = new IdSet;
     bcIdSet = new Set<number>;
-    ipc?: IPCServer;
+    ipc?: IpcServer;
 
     broadcast(callback: BcMsgCallback) {
         let buf: Buffer | undefined;

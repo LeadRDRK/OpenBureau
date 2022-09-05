@@ -1,23 +1,22 @@
 import net from "node:net";
 import { Log } from "../core";
-import { IPCData, IPCHandlers, isIPCData } from ".";
-import fs from "node:fs";
+import { IpcData, IpcHandlers, isIpcData } from ".";
 
-export interface IPCConnState {
+export interface IpcConnState {
     socket: net.Socket;
     listening: {[key: string]: boolean};
 }
 
-export class IPCServer {
-    handlers: IPCHandlers;
-    clients = new Set<IPCConnState>;
+export class IpcServer {
+    handlers: IpcHandlers;
+    clients = new Set<IpcConnState>;
 
-    constructor(handlers: IPCHandlers) {
+    constructor(handlers: IpcHandlers) {
         this.handlers = handlers;
     }
 
     private listener(socket: net.Socket) {
-        let client: IPCConnState = { socket, listening: {} };
+        let client: IpcConnState = { socket, listening: {} };
         this.clients.add(client);
 
         socket.on("data", buf => {
@@ -25,7 +24,7 @@ export class IPCServer {
             
             try {
                 const data = JSON.parse(str);
-                if (!isIPCData(data)) return;
+                if (!isIpcData(data)) return;
 
                 if (data.type in this.handlers) {
                     const res = this.handlers[data.type](...data.args);
@@ -51,7 +50,7 @@ export class IPCServer {
         if (callback) server.on("listening", callback);
     }
 
-    broadcastIf(data: IPCData, predicate: (client: IPCConnState) => boolean) {
+    broadcastIf(data: IpcData, predicate: (client: IpcConnState) => boolean) {
         this.clients.forEach(client => {
             if (predicate(client))
                 client.socket.write(JSON.stringify(data));

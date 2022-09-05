@@ -1,30 +1,30 @@
 import net from "node:net";
 import { Log } from "../core";
-import { IPCData, isIPCData } from ".";
+import { IpcData, isIpcData } from ".";
 import { EventEmitter } from "node:events";
 
 const TAG_TIMEOUT = 5000;
 
-export declare interface IPCClient {
+export declare interface IpcClient {
     /**
      * events.EventEmitter
      *   1. data
      */
     addListener(event: string, listener: (...args: any[]) => void): this;
-    addListener(event: "data", listener: (data: IPCData) => void): this;
+    addListener(event: "data", listener: (data: IpcData) => void): this;
     emit(event: string | symbol, ...args: any[]): boolean;
-    emit(event: "data", data: IPCData): boolean;
+    emit(event: "data", data: IpcData): boolean;
     on(event: string, listener: (...args: any[]) => void): this;
-    on(event: "data", listener: (data: IPCData) => void): this;
+    on(event: "data", listener: (data: IpcData) => void): this;
     once(event: string, listener: (...args: any[]) => void): this;
-    once(event: "data", listener: (data: IPCData) => void): this;
+    once(event: "data", listener: (data: IpcData) => void): this;
     prependListener(event: string, listener: (...args: any[]) => void): this;
-    prependListener(event: "data", listener: (data: IPCData) => void): this;
+    prependListener(event: "data", listener: (data: IpcData) => void): this;
     prependOnceListener(event: string, listener: (...args: any[]) => void): this;
-    prependOnceListener(event: "data", listener: (data: IPCData) => void): this;
+    prependOnceListener(event: "data", listener: (data: IpcData) => void): this;
 }
 
-export class IPCClient extends EventEmitter {
+export class IpcClient extends EventEmitter {
     socket: net.Socket;
     private tagListeners: {[key: string]: (...args: any[]) => void} = {};
 
@@ -46,7 +46,7 @@ export class IPCClient extends EventEmitter {
         const str = buf.toString("utf8");
         try {
             const data = JSON.parse(str);
-            if (!isIPCData(data)) return;
+            if (!isIpcData(data)) return;
 
             if (data.tag in this.tagListeners) {
                 this.tagListeners[data.tag](...data.args);
@@ -60,7 +60,7 @@ export class IPCClient extends EventEmitter {
         }
     }
 
-    write(data: IPCData): boolean {
+    write(data: IpcData): boolean {
         return this.socket.write(JSON.stringify(data));
     }
 
@@ -78,7 +78,7 @@ export class IPCClient extends EventEmitter {
         setTimeout(() => delete this.tagListeners[tag], TAG_TIMEOUT);
     }
 
-    sendRequest(data: IPCData, callback: (...args: any[]) => void, autoTag = true) {
+    sendRequest(data: IpcData, callback: (...args: any[]) => void, autoTag = true) {
         if (autoTag)
             data.tag = this.generateTag();
         
