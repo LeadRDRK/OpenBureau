@@ -1,4 +1,5 @@
-import { Log, State, SocketState, UserState, Config, Vector3, User, BanList } from ".";
+import { State, SocketState, UserState, User, BanList } from ".";
+import { Log, Config, Vector3 } from "../core";
 
 const CLIENT_HELLO = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x01, 0x01]);
 const SERVER_HELLO_PREFIX = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);

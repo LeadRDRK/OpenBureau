@@ -1,25 +1,8 @@
 import net from "node:net";
 import crypto from "node:crypto"
-import { Log, Protocol, MessageArray, User } from ".";
+import { Protocol, MessageArray, User } from ".";
+import { Log, IdSet } from "../core";
 import { IPCServer } from "../ipc";
-
-class IdSet extends Set<number> {
-    last: number = -1;
-    add() {
-        ++this.last;
-        return super.add(this.last);
-    }
-
-    delete(value: number) {
-        if (value == this.last) {
-            while (--this.last != -1) {
-                if (this.has(this.last))
-                    break;
-            }
-        }
-        return super.delete(value);
-    }
-}
 
 export type BcMsgCallback = (user: User) => MessageArray | undefined;
 

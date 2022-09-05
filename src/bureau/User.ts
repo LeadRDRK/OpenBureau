@@ -1,4 +1,5 @@
-import { SocketState, Vector3 } from ".";
+import { Vector3 } from "../core";
+import { SocketState } from ".";
 
 export enum UserState {
     NOT_CONNECTED = 0,

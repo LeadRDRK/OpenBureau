@@ -3,9 +3,9 @@ import fs from "node:fs";
 
 let entries: {[key: string]: string} = {};
 
-function loadFile() {
+function loadFile(path: string) {
     try {
-        let content = fs.readFileSync("config.txt", {encoding: "utf8"});
+        let content = fs.readFileSync(path, {encoding: "utf8"});
         let lines = content.split("\n");
         for (let i = 0; i < lines.length; ++i) {
             const line = lines[i];
@@ -18,10 +18,10 @@ function loadFile() {
             }
             entries[key] = value;
         }
-        Log.verbose("config.txt loaded");
+        Log.verbose(`${path} loaded`);
     }
     catch {
-        Log.verbose("Failed to read config.txt");
+        Log.verbose(`Failed to read ${path}`);
     }
 }
 

@@ -6,13 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "devstart": "npm run build && npm run start"
+    "bureau": "node dist/index-bureau.js",
+    "devbureau": "npm run build && npm run bureau"
   },
   "author": "LeadRDRK",
   "license": "MIT",
   "dependencies": {
-    "@types/nanoid": "^2.1.0",
     "@types/node": "^18.7.6",
     "@types/node-cleanup": "^2.1.2",
     "node-cleanup": "^2.1.2",

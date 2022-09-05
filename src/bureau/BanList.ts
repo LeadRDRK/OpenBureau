@@ -1,4 +1,4 @@
-import { Log } from ".";
+import { Log } from "../core";
 import fs from "node:fs";
 
 let bannedIps = new Set<string>;

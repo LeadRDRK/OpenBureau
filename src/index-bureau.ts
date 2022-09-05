@@ -1,9 +1,12 @@
 import net from "node:net";
-import { Log, Config, Protocol, State, SocketState, Repl, BanList } from "./core";
+import fs from "node:fs";
+import { Log, Config, Repl } from "./core";
+import { Protocol, State, SocketState, BanList, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList } from "./bureau";
 import { IPCServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
 
 let USER_TIMEOUT: number;
+let IPC_SOCKET: string | undefined;
 
 let state: State;
 let ipSet: Set<string>;
@@ -58,14 +61,14 @@ function main() {
     Log.info(`OpenBureau v${process.env.npm_package_version}`);
 
     // Load config files
-    Config.loadFile();
+    Config.loadFile("config.txt");
     BanList.loadFile();
 
     const PORT = +Config.get("PORT", "5126");
     const HOST = Config.get("HOST", "0.0.0.0");
     const MAX_CONN = +Config.get("MAX_CONN", "256"); // Limited to 256 by design
     USER_TIMEOUT = +Config.get("USER_TIMEOUT", "10000");
-    const IPC_SOCKET = Config.get("IPC_SOCKET");
+    IPC_SOCKET = Config.get("IPC_SOCKET");
     
     if (Config.isEnabled("NO_MULTI"))
         ipSet = new Set<string>;
@@ -101,13 +104,23 @@ function main() {
        .listen(PORT, HOST)
        .maxConnections = MAX_CONN;
     
-    if (!Config.isEnabled("NO_REPL"))
-        Repl.start(state);
+    if (!Config.isEnabled("NO_REPL")) {
+        // Reserve system bcId for system messages
+        state.bcIdSet.add(SYSTEM_BCID);
+        const repl = new Repl(replCmds, replCmdAliases, replCmdList);
+        repl.start(state);
+    }
 }
 
 nodeCleanup(() => {
     Log.resume(); // Might have been paused during an active prompt
+
+    // For unix sockets
+    if (IPC_SOCKET && fs.existsSync(IPC_SOCKET))
+        fs.unlinkSync(IPC_SOCKET);
+    
     BanList.writeFile();
+
     Log.info("Goodbye!");
 });
 

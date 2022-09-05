@@ -1,16 +1,25 @@
 import net from "node:net";
 import { Log } from "../core";
-import { IPCHandlers, isIPCData } from ".";
+import { IPCData, IPCHandlers, isIPCData } from ".";
 import fs from "node:fs";
+
+export interface IPCConnState {
+    socket: net.Socket;
+    listening: {[key: string]: boolean};
+}
 
 export class IPCServer {
     handlers: IPCHandlers;
+    clients = new Set<IPCConnState>;
 
     constructor(handlers: IPCHandlers) {
         this.handlers = handlers;
     }
 
     private listener(socket: net.Socket) {
+        let client: IPCConnState = { socket, listening: {} };
+        this.clients.add(client);
+
         socket.on("data", buf => {
             const str = buf.toString("utf8");
             
@@ -28,20 +37,24 @@ export class IPCServer {
                 Log.error(e);
             }
         })
-        .on("error", Log.error);
+        .on("error", Log.error)
+        .on("close", () => this.clients.delete(client));
     }
 
     init(port: number, callback?: () => void): void;
     init(path: string, callback?: () => void): void;
     init(portOrPath: number | string, callback?: () => void) {
-        // For unix sockets
-        if (typeof portOrPath == "string" && fs.existsSync(portOrPath))
-            fs.unlinkSync(portOrPath);
-
         const server = net.createServer(this.listener.bind(this))
         .on("error", Log.error)
         .listen(portOrPath);
 
         if (callback) server.on("listening", callback);
+    }
+
+    broadcastIf(data: IPCData, predicate: (client: IPCConnState) => boolean) {
+        this.clients.forEach(client => {
+            if (predicate(client))
+                client.socket.write(JSON.stringify(data));
+        });
     }
 }
