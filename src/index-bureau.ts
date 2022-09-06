@@ -1,7 +1,7 @@
 import net from "node:net";
 import fs from "node:fs";
 import { Log, Config, Repl } from "./core";
-import { Protocol, State, SocketState, BanList, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList } from "./bureau";
+import { Protocol, State, SocketState, BanList, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList, ipcHandlers } from "./bureau";
 import { IpcServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
 
@@ -92,7 +92,7 @@ function main() {
     Protocol.init();
 
     if (IPC_SOCKET) {
-        state.ipc = new IpcServer({});
+        state.ipc = new IpcServer(ipcHandlers, state);
         state.ipc.init(IPC_SOCKET, () => Log.info(`IPC socket listening at ${IPC_SOCKET}`));
     }
 

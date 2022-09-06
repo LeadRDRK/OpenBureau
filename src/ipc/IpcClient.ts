@@ -26,7 +26,7 @@ export declare interface IpcClient {
 
 export class IpcClient extends EventEmitter {
     socket: net.Socket;
-    private tagListeners: {[key: string]: (...args: any[]) => void} = {};
+    private tagListeners: {[key: string]: (content: any) => void} = {};
 
     constructor(port: number, host?: string);
     constructor(path: string);
@@ -49,7 +49,7 @@ export class IpcClient extends EventEmitter {
             if (!isIpcData(data)) return;
 
             if (data.tag in this.tagListeners) {
-                this.tagListeners[data.tag](...data.args);
+                this.tagListeners[data.tag](data.content);
                 delete this.tagListeners[data.tag];
             }
 
@@ -70,7 +70,7 @@ export class IpcClient extends EventEmitter {
         return tag;
     }
 
-    addTagListener(tag: string, listener: (...args: any[]) => void) {
+    addTagListener(tag: string, listener: (content: any) => void) {
         if (tag in this.tagListeners)
             throw new Error("Tag listener already exists");
         
@@ -78,7 +78,7 @@ export class IpcClient extends EventEmitter {
         setTimeout(() => delete this.tagListeners[tag], TAG_TIMEOUT);
     }
 
-    sendRequest(data: IpcData, callback: (...args: any[]) => void, autoTag = true) {
+    sendRequest(data: IpcData, callback: (content: any) => void, autoTag = true) {
         if (autoTag)
             data.tag = this.generateTag();
         

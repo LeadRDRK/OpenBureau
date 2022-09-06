@@ -1,15 +1,15 @@
-import { State, Protocol, UserState, BanList } from ".";
+import { State, Protocol, UserState, BanList, BureauUtils } from ".";
 import { Log, Utils } from "../core";
 import net from "node:net";
 
 export const SYSTEM_BCID = 0x0202;
 
 export const replCmds: {[key: string]: (state: State, args: string[]) => void} = {
-    stop(_: State, __: string[]) {
+    stop() {
         process.exit();
     },
 
-    users(state: State, _: string[]) {
+    users(state: State) {
         let count = state.getUserCount();
         if (count == 0) {
             Log.info("There are no users in the server");
@@ -65,18 +65,8 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
             Log.error("Invalid user IDs provided");
             return;
         }
-
-        let user1 = state.users[id1];
-        let user2 = state.users[id2];
-        if (!user1.position || !user2.position) {
-            Log.error("Teleport failed: user has no position data");
-            return;
-        }
-
-        user1.position = user2.position;
-        user1.position.y += 0x100;
-        user1.ss.write([{id1: user1.id, id2: user1.id, bcId: user1.bcId, position: user1.position}]);
-        Log.info(`Teleported ${user1.name} to ${user2.name}`);
+        
+        BureauUtils.teleport(state.users[id1], state.users[id2]);
     },
 
     kick(state: State, args: string[]) {
@@ -119,18 +109,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
             }
         }
         
-        // Add to banlist
-        BanList.addIp(ip);
-
-        // Disconnect all sockets with the IP
-        for (const id in state.sockets) {
-            let socket = state.sockets[id];
-            let a = socket.address();
-            if ("address" in a && a.address == ip)
-                socket.destroy();
-        }
-
-        Log.info(`${ip} has been banned`);
+        BureauUtils.banIp(state, ip);
     },
 
     unban(_: State, args: string[]) {
@@ -152,17 +131,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
             Log.error("Insufficient arguments to 'banname'");
             return;
         }
-        let name = args[0];
-        BanList.addName(name);
-
-        // Kick all users that have the name
-        for (const id in state.users) {
-            let user = state.users[id];
-            if (user.name == name)
-                user.ss.socket.destroy();
-        }
-
-        Log.info(`${name} has been banned`);
+        BureauUtils.banName(state, args[0]);
     },
 
     unbanname(_: State, args: string[]) {
@@ -179,7 +148,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
         Log.info(`${name} has been unbanned`);
     },
 
-    bannedips(_: State, __: string[]) {
+    bannedips() {
         let ips = BanList.getBannedIps();
         if (ips.size == 0) {
             Log.info("There are no banned IPs");
@@ -191,7 +160,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
         Log.info(output);
     },
 
-    bannednames(_: State, __: string[]) {
+    bannednames() {
         let ips = BanList.getBannedNames();
         if (ips.size == 0) {
             Log.info("There are no banned names");
