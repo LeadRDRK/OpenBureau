@@ -1,10 +1,11 @@
-import { Log } from "../core";
+import { Log, Config } from ".";
 import fs from "node:fs";
 
 let bannedIps = new Set<string>;
 let bannedNames = new Set<string>;
 
 function loadFile() {
+    if (Config.isEnabled("NO_BANLIST")) return;
     try {
         let content = fs.readFileSync("banlist.txt", {encoding: "utf8"});
         let lines = content.split("\n");
@@ -59,7 +60,8 @@ function getBannedNames() {
     return bannedNames;
 }
 
-function writeFile() {
+function save() {
+    if (Config.isEnabled("NO_BANLIST")) return;
     Log.info("Saving ban list to banlist.txt");
     let content = "";
     bannedIps.forEach(value => content += `i:${value}\n`);
@@ -77,5 +79,5 @@ export const BanList = {
     isNameBanned,
     getBannedIps,
     getBannedNames,
-    writeFile
+    save
 }

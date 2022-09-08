@@ -40,8 +40,11 @@ export class Repl {
 
     start(state: any) {
         let prompted = false;
-        stdin.setRawMode(true);
-        stdin.resume();
+        if (stdin.isTTY) {
+            stdin.setRawMode(true);
+            stdin.resume();
+        }
+
         stdin.on("data", key => {
             if (key.compare(CTRL_C) == 0) {
                 process.exit();
@@ -49,8 +52,10 @@ export class Repl {
             }
             if (prompted) return;
             // On input, pause the log to let user enter their command
-            Log.pause();
-            rl.prompt();
+            if (stdin.isTTY) {
+                Log.pause();
+                rl.prompt();
+            }
             prompted = true;
         });
 

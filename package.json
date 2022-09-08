@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "bureau": "node dist/index-bureau.js",
-    "devbureau": "npm run build && npm run bureau"
+    "wls": "node dist/index-wls.js",
+    "devbureau": "npm run build && npm run bureau",
+    "devwls": "npm run build && npm run wls"
   },
   "author": "LeadRDRK",
   "license": "MIT",

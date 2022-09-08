@@ -1,6 +1,11 @@
 import { Config } from ".";
 let logBuffer: [string, any[]][] = [];
 let paused = false;
+let LOG_TAG: string | undefined;
+
+function init() {
+    LOG_TAG = Config.get("LOG_TAG");
+}
 
 function info(message?: any, ...optionalParams: any[]) {
     write(`[INFO] ${message}`, ...optionalParams);
@@ -23,6 +28,9 @@ function verbose(message?: any, ...optionalParams: any[]) {
 }
 
 function write(message?: any, ...optionalParams: any[]) {
+    if (LOG_TAG)
+        message = `[${LOG_TAG}] ${message}`;
+
     if (paused)
         logBuffer.push([message, optionalParams]);
     else
@@ -46,10 +54,12 @@ function resume() {
 }
 
 export const Log = {
+    init,
     info,
     warn,
     error,
     verbose,
+    write,
     pause,
     resume
 }

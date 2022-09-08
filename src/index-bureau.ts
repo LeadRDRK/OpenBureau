@@ -1,17 +1,32 @@
 import net from "node:net";
 import fs from "node:fs";
-import { Log, Config, Repl } from "./core";
-import { Protocol, State, SocketState, BanList, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList, ipcHandlers } from "./bureau";
+import assert from "assert";
+import { Log, Config, Repl, BanList } from "./core";
+import { Protocol, State, SocketState, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList, ipcHandlers } from "./bureau";
 import { IpcServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
 
+let MAX_CONN: number;
 let USER_TIMEOUT: number;
 let IPC_SOCKET: string | undefined;
 
 let state: State;
 let ipSet: Set<string>;
 
-async function listener(socket: net.Socket) {
+let connCount = 0;
+function checkConnCount() {
+    if (connCount >= MAX_CONN && !state.isFull)
+        state.isFull = true;
+    else if (state.isFull)
+        state.isFull = false;
+    else
+        return;
+    
+    if (state.ipc)
+        state.ipc.broadcastIf({type: "serverFull", content: state.isFull}, client => client.listening.serverFull);
+}
+
+function listener(socket: net.Socket) {
     let a = socket.address();
     let address = ("address" in a) ? a.address : "<unknown>";
     if (BanList.isIpBanned(address)) {
@@ -43,10 +58,16 @@ async function listener(socket: net.Socket) {
     socket.on("data", data => Protocol.processRequest(state, ss, data))
     .on("error", Log.error)
     .on("close", () => {
+        --connCount;
+        checkConnCount();
+
         state.removeUser(id);
         if (Config.isEnabled("NO_MULTI")) ipSet!.delete(address);
         Log.verbose(`${address} disconnected`);
     });
+
+    ++connCount;
+    checkConnCount();
 
     // Disconnect if client doesn't identify themselves
     setTimeout(() => {
@@ -58,35 +79,24 @@ async function listener(socket: net.Socket) {
 }
 
 function main() {
-    Log.info(`OpenBureau v${process.env.npm_package_version}`);
-
-    // Load config files
     Config.loadFile("config.txt");
     BanList.loadFile();
 
+    Log.init();
+    Log.info(`OpenBureau v${process.env.npm_package_version}`);
+
     const PORT = +Config.get("PORT", "5126");
     const HOST = Config.get("HOST", "0.0.0.0");
-    const MAX_CONN = +Config.get("MAX_CONN", "256"); // Limited to 256 by design
+    MAX_CONN = +Config.get("MAX_CONN", "256"); // Limited to 256 by design
     USER_TIMEOUT = +Config.get("USER_TIMEOUT", "10000");
     IPC_SOCKET = Config.get("IPC_SOCKET");
     
     if (Config.isEnabled("NO_MULTI"))
         ipSet = new Set<string>;
 
-    if (!Number.isInteger(PORT)) {
-        Log.error("Invalid port provided. Aborting");
-        return;
-    }
-
-    if (!Number.isInteger(MAX_CONN)) {
-        Log.error("Invalid max connection count. Aborting");
-        return;
-    }
-
-    if (!Number.isInteger(USER_TIMEOUT)) {
-        Log.error("Invalid user timeout value. Aborting");
-        return;
-    }
+    assert(Number.isInteger(PORT), "Invalid port provided");
+    assert(Number.isInteger(MAX_CONN) && MAX_CONN >= 0, "Invalid max connection count");
+    assert(USER_TIMEOUT >= 0, "Invalid user timeout value");
 
     state = new State;
     Protocol.init();
@@ -103,6 +113,8 @@ function main() {
        .on("error", Log.error)
        .listen(PORT, HOST)
        .maxConnections = MAX_CONN;
+
+    nodeCleanup(cleanup);
     
     if (!Config.isEnabled("NO_REPL")) {
         // Reserve system bcId for system messages
@@ -110,18 +122,21 @@ function main() {
         const repl = new Repl(replCmds, replCmdAliases, replCmdList);
         repl.start(state);
     }
+
+    if (process.send)
+        process.send("ready");
 }
 
-nodeCleanup(() => {
+function cleanup() {
     Log.resume(); // Might have been paused during an active prompt
 
     // For unix sockets
     if (IPC_SOCKET && fs.existsSync(IPC_SOCKET))
         fs.unlinkSync(IPC_SOCKET);
     
-    BanList.writeFile();
+    BanList.save();
 
     Log.info("Goodbye!");
-});
+}
 
 main();

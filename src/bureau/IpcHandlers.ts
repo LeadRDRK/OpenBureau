@@ -1,6 +1,6 @@
 import { IpcData, IpcHandlers } from "../ipc";
-import { State, BureauUtils, BanList } from ".";
-import { Log } from "../core";
+import { State, BureauUtils } from ".";
+import { Log, BanList } from "../core";
 
 function cloneUser(user: {[key: string]: any}) {
     let clone: {[key: string]: any} = {};
@@ -112,6 +112,10 @@ export const ipcHandlers: IpcHandlers = {
     getBannedNames() {
         let names = BanList.getBannedNames();
         return {type: "bannedNames", content: Array.from(names)};
+    },
+
+    isServerFull(state: State) {
+        return {type: "serverFull", content: state.isFull};
     },
 
     stop() {

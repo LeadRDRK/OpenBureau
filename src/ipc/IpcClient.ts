@@ -26,7 +26,7 @@ export declare interface IpcClient {
 
 export class IpcClient extends EventEmitter {
     socket: net.Socket;
-    private tagListeners: {[key: string]: (content: any) => void} = {};
+    private tagListeners: {[key: string]: (data: IpcData) => void} = {};
 
     constructor(port: number, host?: string);
     constructor(path: string);
@@ -43,20 +43,24 @@ export class IpcClient extends EventEmitter {
     }
 
     private dataListener(buf: Buffer) {
-        const str = buf.toString("utf8");
-        try {
-            const data = JSON.parse(str);
-            if (!isIpcData(data)) return;
+        const content = buf.toString("utf8");
+        const split = content.split("\0");
+        for (let i = 0; i < split.length - 1; ++i) {
+            const str = split[i];
+            try {
+                const data = JSON.parse(str);
+                if (!isIpcData(data)) return;
 
-            if (data.tag in this.tagListeners) {
-                this.tagListeners[data.tag](data.content);
-                delete this.tagListeners[data.tag];
+                if (data.tag in this.tagListeners) {
+                    this.tagListeners[data.tag](data);
+                    delete this.tagListeners[data.tag];
+                }
+
+                this.emit("data", data);
             }
-
-            this.emit("data", data);
-        }
-        catch (e) {
-            Log.error(e);
+            catch (e) {
+                Log.error(e);
+            }
         }
     }
 
@@ -70,15 +74,18 @@ export class IpcClient extends EventEmitter {
         return tag;
     }
 
-    addTagListener(tag: string, listener: (content: any) => void) {
+    addTagListener(tag: string, listener: (data: IpcData) => void) {
         if (tag in this.tagListeners)
             throw new Error("Tag listener already exists");
         
         this.tagListeners[tag] = listener;
-        setTimeout(() => delete this.tagListeners[tag], TAG_TIMEOUT);
+        setTimeout(() => {
+            listener({type: "failed", tag});
+            delete this.tagListeners[tag];
+        }, TAG_TIMEOUT);
     }
 
-    sendRequest(data: IpcData, callback: (content: any) => void, autoTag = true) {
+    sendRequest(data: IpcData, callback: (data: IpcData) => void, autoTag = true) {
         if (autoTag)
             data.tag = this.generateTag();
         

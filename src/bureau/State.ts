@@ -11,6 +11,7 @@ export class State {
     sockets: {[key: number]: net.Socket} = {};
     idSet = new IdSet;
     bcIdSet = new Set<number>;
+    isFull = false;
     ipc?: IpcServer;
 
     broadcast(callback: BcMsgCallback) {
@@ -39,8 +40,9 @@ export class State {
         this.idSet.delete(id);
 
         if (!(id in this.users)) return;
-        let user = this.users[id];
-        let bcId = user.bcId;
+        const user = this.users[id];
+        const bcId = user.bcId;
+        const address = user.ss.address;
 
         Log.info(`${user.name} has left the server`);
         this.bcIdSet.delete(bcId);
@@ -62,6 +64,11 @@ export class State {
             
             return msgs;
         });
+
+        if (this.ipc) {
+            this.ipc.broadcastIf({type: "removeUser", content: {id, address}}, client => client.listening.removeUser);
+            this.ipc.broadcastIf({type: "userCount", content: userCount}, client => client.listening.userCount);
+        }
     }
 
     generateBcId(): Promise<number> {

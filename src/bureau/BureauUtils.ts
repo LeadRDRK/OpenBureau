@@ -1,5 +1,5 @@
-import { User, State, BanList } from ".";
-import { Log } from "../core";
+import { User, State } from ".";
+import { Log, BanList } from "../core";
 
 function teleport(user1: User, user2: User) {
     if (!user1.position || !user2.position) {

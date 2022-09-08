@@ -1,5 +1,5 @@
-import { State, SocketState, UserState, User, BanList } from ".";
-import { Log, Config, Vector3 } from "../core";
+import { State, SocketState, UserState, User } from ".";
+import { Log, Config, Vector3, BanList } from "../core";
 
 const CLIENT_HELLO = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x01, 0x01]);
 const SERVER_HELLO_PREFIX = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
@@ -282,14 +282,16 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             }
         }
 
+        const userCount = state.getUserCount();
         ss.write(reply);
         state.broadcast(user => [
-            {id1: 0, id2: user.id, type: Opcode.SMSG_USER_COUNT, content: userCountContent(state.getUserCount())}
+            {id1: 0, id2: user.id, type: Opcode.SMSG_USER_COUNT, content: userCountContent(userCount)}
         ]);
 
-        if (state.ipc)
-            state.ipc.broadcastIf({type: "newUser", content: {id: ss.id, name, avatar}}, client => client.listening.newUser);
-
+        if (state.ipc) {
+            state.ipc.broadcastIf({type: "newUser", content: {id: ss.id, name, avatar, address: ss.address}}, client => client.listening.newUser);
+            state.ipc.broadcastIf({type: "userCount", content: userCount}, client => client.listening.userCount);
+        }
         break;
     }
 
@@ -544,17 +546,20 @@ function processPosUpdate(state: State, ss: SocketState, data: Buffer, i: number
 }
 
 async function processRequest(state: State, ss: SocketState, data: Buffer) {
-    if (data.compare(CLIENT_HELLO) == 0) {
-        Log.verbose("Client HELLO");
-        ss.saidHello = true;
-        // Reply with hello + user id
-        let res = Buffer.allocUnsafe(SERVER_HELLO_PREFIX.length + 1);
-        let n = bufcpy(res, SERVER_HELLO_PREFIX, 0);
-        res.writeUint8(ss.id, n);
-        ss.socket.write(res);
+    if (!ss.saidHello) {
+        // First packet must always be the hello packet
+        if (data.compare(CLIENT_HELLO) == 0) {
+            Log.verbose("Client HELLO");
+            ss.saidHello = true;
+            // Reply with hello + user id
+            let res = Buffer.allocUnsafe(SERVER_HELLO_PREFIX.length + 1);
+            let n = bufcpy(res, SERVER_HELLO_PREFIX, 0);
+            res.writeUint8(ss.id, n);
+            ss.socket.write(res);
+        }
+        else ss.socket.destroy();
         return;
     }
-    if (!ss.saidHello) return;
 
     // Each request can have multiple messages
     for (let i = 0; i < data.length;) {

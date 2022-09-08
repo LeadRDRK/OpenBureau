@@ -1,5 +1,5 @@
-import { State, Protocol, UserState, BanList, BureauUtils } from ".";
-import { Log, Utils } from "../core";
+import { State, Protocol, UserState, BureauUtils } from ".";
+import { Log, Utils, BanList } from "../core";
 import net from "node:net";
 
 export const SYSTEM_BCID = 0x0202;

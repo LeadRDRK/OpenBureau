@@ -14,6 +14,9 @@ export enum IpcError {
 
 const builtInHandlers: {[key: string]: (client: IpcConnState, content: any) => IpcData | void} = {
     listen(client: IpcConnState, args: any) {
+        if (typeof args == "string")
+            args = [args];
+
         if (!Array.isArray(args))
             return {type: "error", content: IpcError.INVALID_ARGS};
 
@@ -27,6 +30,9 @@ const builtInHandlers: {[key: string]: (client: IpcConnState, content: any) => I
     },
 
     unlisten(client: IpcConnState, args: any) {
+        if (typeof args == "string")
+            args = [args];
+
         if (!Array.isArray(args))
             return {type: "error", content: IpcError.INVALID_ARGS};
 
@@ -78,7 +84,7 @@ export class IpcServer {
 
                 if (res) {
                     res.tag = data.tag;
-                    socket.write(JSON.stringify(res));
+                    socket.write(JSON.stringify(res) + "\0");
                 }
             }
             catch {
@@ -102,7 +108,7 @@ export class IpcServer {
     broadcastIf(data: IpcData, predicate: (client: IpcConnState) => boolean) {
         this.clients.forEach(client => {
             if (predicate(client))
-                client.socket.write(JSON.stringify(data));
+                client.socket.write(JSON.stringify(data) + "\0");
         });
     }
 }
