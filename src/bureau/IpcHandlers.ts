@@ -1,4 +1,4 @@
-import { IpcData, IpcHandlers } from "../ipc";
+import { IpcData, IpcHandlers, IpcError } from "../ipc";
 import { State, BureauUtils } from ".";
 import { Log, BanList } from "../core";
 
@@ -39,6 +39,13 @@ export const ipcHandlers: IpcHandlers = {
 
     getUserCount(state: State) {
         return {type: "userCount", content: state.getUserCount()};
+    },
+
+    chat(state: State, msg: any) {
+        if (typeof msg != "string")
+            return {type: "error", content: IpcError.INVALID_ARGS};
+        
+        BureauUtils.sendSystemChatMsg(state, msg);
     },
 
     teleport(state: State, content: any) {

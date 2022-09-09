@@ -212,8 +212,11 @@ export class State {
         bureau.ipc.socket.destroy();
         bureau.process.kill("SIGTERM");
         this.idSet.delete(bureau.id);
-        this.worlds[bureau.world].delete(bureau);
+        this.worlds[world].delete(bureau);
         delete this.bureaus[id];
+
+        if (this.worlds[world].size == 0)
+            delete this.worlds[world];
 
         if (this.ipc) {
             this.ipc.broadcastIf({type: "removeBureau", content: { id, world, port }}, client => client.listening.removeBureau);

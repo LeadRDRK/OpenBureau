@@ -65,7 +65,7 @@ export class IpcClient extends EventEmitter {
     }
 
     write(data: IpcData): boolean {
-        return this.socket.write(JSON.stringify(data));
+        return this.socket.write(JSON.stringify(data) + "\0");
     }
 
     generateTag(): string {

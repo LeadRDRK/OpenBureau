@@ -1,8 +1,6 @@
-import { State, Protocol, UserState, BureauUtils } from ".";
+import { State, UserState, BureauUtils } from ".";
 import { Log, Utils, BanList } from "../core";
 import net from "node:net";
-
-export const SYSTEM_BCID = 0x0202;
 
 export const replCmds: {[key: string]: (state: State, args: string[]) => void} = {
     stop() {
@@ -16,13 +14,17 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
             return;
         }
 
-        let output = `There ${Utils.pluralNoun(count)} currently ${Utils.pluralize(count, "user")}:\n` +
-                     "    ID\tName\t\tState";
+        let output: {[key: number]: any} = {};  
         for (const id in state.users) {
             let user = state.users[id];
-            output += `\n    ${user.id}\t${user.name}\t\t${UserState[user.state]}`;
+            output[id] = {
+                Name: user.name,
+                State: UserState[user.state]
+            };
         }
-        Log.info(output);
+
+        Log.info(`There ${Utils.pluralNoun(count)} currently ${Utils.pluralize(count, "user")}:`);
+        console.table(output);
     },
 
     getids(state: State, args: string[]) {
@@ -43,15 +45,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
     },
 
     chat(state: State, args: string[]) {
-        const chatMsg = `[System] ${args.join(" ")}`;
-        state.broadcast(user => {
-            let ujContent = Protocol.userJoinedContent(SYSTEM_BCID, "System", "avtwrl/01cat.wrl");
-            return [
-                {id1: user.id, id2: user.id, type: Protocol.Opcode.SMSG_USER_JOINED, content: ujContent},
-                Protocol.buildChatSendMsg(user.id, SYSTEM_BCID, chatMsg)
-            ]
-        });
-        Log.info(`[CHAT] ${chatMsg}`);
+        BureauUtils.sendSystemChatMsg(state, args.join(" "));
     },
 
     teleport(state: State, args: string[]) {
@@ -112,19 +106,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
         BureauUtils.banIp(state, ip);
     },
 
-    unban(_: State, args: string[]) {
-        if (args.length < 1) {
-            Log.error("Insufficient arguments to 'unban'");
-            return;
-        }
-        let ip = args[0];
-        if (!BanList.isIpBanned(ip)) {
-            Log.info(`${ip} is not in the ban list`);
-            return;
-        }
-        BanList.deleteIp(ip);
-        Log.info(`${ip} has been unbanned`);
-    },
+    unban: Utils.unbanCmd,
 
     banname(state: State, args: string[]) {
         if (args.length < 1) {
@@ -134,43 +116,10 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
         BureauUtils.banName(state, args[0]);
     },
 
-    unbanname(_: State, args: string[]) {
-        if (args.length < 1) {
-            Log.error("Insufficient arguments to 'unbanname'");
-            return;
-        }
-        let name = args[0];
-        if (!BanList.isNameBanned(name)) {
-            Log.info(`${name} is not in the ban list`);
-            return;
-        }
-        BanList.deleteName(name);
-        Log.info(`${name} has been unbanned`);
-    },
+    unbanname: Utils.unbanNameCmd,
 
-    bannedips() {
-        let ips = BanList.getBannedIps();
-        if (ips.size == 0) {
-            Log.info("There are no banned IPs");
-            return;
-        }
-
-        let output = "Banned IPs:";
-        ips.forEach(value => output += `\n    ${value}`);
-        Log.info(output);
-    },
-
-    bannednames() {
-        let ips = BanList.getBannedNames();
-        if (ips.size == 0) {
-            Log.info("There are no banned names");
-            return;
-        }
-
-        let output = "Banned names:";
-        ips.forEach(value => output += `\n    ${value}`);
-        Log.info(output);
-    }
+    bannedips: Utils.bannedIpsCmd,
+    bannednames: Utils.bannedNamesCmd
 }
 
 export const replCmdAliases: {[key: string]: string} = {

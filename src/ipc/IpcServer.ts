@@ -68,27 +68,30 @@ export class IpcServer {
         this.clients.add(client);
 
         socket.on("data", buf => {
-            const str = buf.toString("utf8");
-            
-            try {
-                const data = JSON.parse(str);
-                if (!isIpcData(data)) return;
+            const content = buf.toString("utf8");
+            const split = content.split("\0");
+            for (let i = 0; i < split.length - 1; ++i) {
+                const str = split[i];
+                try {
+                    const data = JSON.parse(str);
+                    if (!isIpcData(data)) return;
 
-                let res: IpcData | void;
-                if (data.type in this.handlers) 
-                    res = this.handlers[data.type](this.state, data.content);
-                else if (data.type in builtInHandlers)
-                    res = builtInHandlers[data.type](client, data.content);
-                else
-                    res = {type: "error", content: IpcError.INVALID_TYPE};
+                    let res: IpcData | void;
+                    if (data.type in this.handlers) 
+                        res = this.handlers[data.type](this.state, data.content);
+                    else if (data.type in builtInHandlers)
+                        res = builtInHandlers[data.type](client, data.content);
+                    else
+                        res = {type: "error", content: IpcError.INVALID_TYPE};
 
-                if (res) {
-                    res.tag = data.tag;
-                    socket.write(JSON.stringify(res) + "\0");
+                    if (res) {
+                        res.tag = data.tag;
+                        socket.write(JSON.stringify(res) + "\0");
+                    }
                 }
-            }
-            catch {
-                Log.error("Failed to parse JSON from IPC message");
+                catch {
+                    Log.error("Failed to parse JSON from IPC message");
+                }
             }
         })
         .on("error", Log.error)

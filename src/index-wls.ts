@@ -1,8 +1,8 @@
 import net from "node:net";
 import fs from "node:fs";
 import assert from "assert";
-import { Log, Config, BanList } from "./core";
-import { State } from "./wls";
+import { Log, Config, BanList, Repl } from "./core";
+import { State, replCmds, replCmdAliases, replCmdList } from "./wls";
 import { IpcServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
 
@@ -116,10 +116,19 @@ function main() {
        .maxConnections = MAX_CONN;
     
     nodeCleanup(cleanup);
+
+    if (!Config.isEnabled("NO_REPL")) {
+        const repl = new Repl(replCmds, replCmdAliases, replCmdList);
+        repl.start(state);
+    }
 }
 
 function cleanup() {
     Log.resume(); // Might have been paused during an active prompt
+
+    for (const id in state.bureaus) {
+        state.bureaus[id].process.kill("SIGTERM");
+    }
 
     // For unix sockets
     if (IPC_SOCKET && fs.existsSync(IPC_SOCKET))
