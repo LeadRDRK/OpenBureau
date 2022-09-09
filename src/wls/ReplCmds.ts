@@ -1,5 +1,5 @@
 import { State, WlsUtils } from ".";
-import { Log, Utils, BanList } from "../core";
+import { Log, Utils } from "../core";
 import net from "node:net";
 
 export const replCmds: {[key: string]: (state: State, args: string[]) => void} = {

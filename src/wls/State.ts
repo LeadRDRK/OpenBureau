@@ -65,9 +65,10 @@ export class State {
                     PORT: port.toString(),
                     IPC_SOCKET: socketPath,
                     NO_BANLIST: "1",
-                    LOG_TAG: id.toString()
+                    LOG_TAG: id.toString(),
+                    NO_REPL: "1"
                 },
-                stdio: ["pipe", "pipe", "pipe", "ipc"]
+                stdio: ["ignore", "pipe", "inherit", "ipc"]
             })
             .once("spawn", () => {
                 Log.info(`Spawned a new bureau for ${world}, port ${port}, id ${id}`);
