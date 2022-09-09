@@ -85,8 +85,17 @@ export class State {
                     clearTimeout(t);
                     const ipc = new IpcClient(socketPath);
 
-                    ipc.socket.once("connect", () => {
-                        const bureau = { id, world, port, users: {}, process, ipc, listen: true, isFull: false };
+                    ipc.socket.once("connect", async () => {
+                        const res = await ipc.sendRequest({type: "getMaxConn"});
+                        if (res.type == "failed") {
+                            Log.error("Failed get max connection count from bureau, terminating");
+                            process.kill("SIGTERM");
+                            reject();
+                            return;
+                        }
+                        const maxConn = res.content;
+
+                        const bureau = { id, world, port, users: {}, maxConn, process, ipc, socketPath, listen: true, isFull: false };
                         this.bureaus[id] = bureau;
                         
                         if (world in this.worlds)
@@ -106,7 +115,7 @@ export class State {
                         ipc.on("data", this.bureauDataListener.bind(this, bureau));
                         
                         if (this.ipc) {
-                            this.ipc.broadcastIf({type: "newBureau", content: { id, world, port }}, client => client.listening.newBureau);
+                            this.ipc.broadcastIf({type: "newBureau", content: { id, world, port, ipcSocket: socketPath }}, client => client.listening.newBureau);
                             this.ipc.broadcastIf({type: "bureauCount", content: this.getBureauCount()}, client => client.listening.bureauCount);
                         }
 
@@ -154,8 +163,9 @@ export class State {
             break;
 
         case "removeUser":
-            delete bureau.users[content.id];
-            if (this.ipSet) this.ipSet.delete(content.address);
+            const id = content;
+            if (this.ipSet) this.ipSet.delete(bureau.users[id].address);
+            delete bureau.users[id];
             break;
 
         case "userCount":
@@ -207,7 +217,6 @@ export class State {
         if (!(id in this.bureaus)) return;
         const bureau = this.bureaus[id];
         const world = bureau.world;
-        const port = bureau.port;
 
         clearTimeout(bureau.timeout);
         bureau.ipc.socket.destroy();
@@ -220,7 +229,7 @@ export class State {
             delete this.worlds[world];
 
         if (this.ipc) {
-            this.ipc.broadcastIf({type: "removeBureau", content: { id, world, port }}, client => client.listening.removeBureau);
+            this.ipc.broadcastIf({type: "removeBureau", content: id}, client => client.listening.removeBureau);
             this.ipc.broadcastIf({type: "bureauCount", content: this.getBureauCount()}, client => client.listening.bureauCount);
         }
         

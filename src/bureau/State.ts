@@ -42,7 +42,6 @@ export class State {
         if (!(id in this.users)) return;
         const user = this.users[id];
         const bcId = user.bcId;
-        const address = user.ss.address;
 
         Log.info(`${user.name} has left the server`);
         this.bcIdSet.delete(bcId);
@@ -66,7 +65,7 @@ export class State {
         });
 
         if (this.ipc) {
-            this.ipc.broadcastIf({type: "removeUser", content: {id, address}}, client => client.listening.removeUser);
+            this.ipc.broadcastIf({type: "removeUser", content: id}, client => client.listening.removeUser);
             this.ipc.broadcastIf({type: "userCount", content: userCount}, client => client.listening.userCount);
         }
     }

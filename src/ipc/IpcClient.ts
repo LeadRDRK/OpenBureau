@@ -85,11 +85,15 @@ export class IpcClient extends EventEmitter {
         }, TAG_TIMEOUT);
     }
 
-    sendRequest(data: IpcData, callback: (data: IpcData) => void, autoTag = true) {
-        if (autoTag)
-            data.tag = this.generateTag();
-        
-        this.addTagListener(data.tag, callback);
-        this.write(data);
+    sendRequest(data: IpcData, autoTag = true): Promise<IpcData> {
+        return new Promise(resolve => {
+            if (autoTag)
+                data.tag = this.generateTag();
+            
+            this.addTagListener(data.tag, data => {
+                resolve(data);
+            });
+            this.write(data);
+        });
     }
 }

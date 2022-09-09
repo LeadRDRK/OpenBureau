@@ -1,6 +1,6 @@
 import { IpcData, IpcHandlers, IpcError } from "../ipc";
 import { State, BureauUtils } from ".";
-import { Log, BanList } from "../core";
+import { Log, BanList, Config } from "../core";
 
 function cloneUser(user: {[key: string]: any}) {
     let clone: {[key: string]: any} = {};
@@ -39,6 +39,10 @@ export const ipcHandlers: IpcHandlers = {
 
     getUserCount(state: State) {
         return {type: "userCount", content: state.getUserCount()};
+    },
+
+    getMaxConn() {
+        return {type: "maxConn", content: +Config.get("MAX_CONN", "256")};
     },
 
     chat(state: State, msg: any) {

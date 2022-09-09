@@ -13,8 +13,10 @@ export interface Bureau {
     world: string;
     port: number;
     users: {[key: number]: BureauUser};
+    maxConn: number;
     process: ChildProcess;
     ipc: IpcClient;
+    socketPath: string;
     listen: boolean;
     isFull: boolean;
     timeout?: NodeJS.Timeout;

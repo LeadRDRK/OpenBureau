@@ -2,7 +2,7 @@ import net from "node:net";
 import fs from "node:fs";
 import assert from "assert";
 import { Log, Config, BanList, Repl } from "./core";
-import { State, replCmds, replCmdAliases, replCmdList } from "./wls";
+import { State, replCmds, replCmdAliases, replCmdList, ipcHandlers } from "./wls";
 import { IpcServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
 
@@ -80,6 +80,7 @@ function main() {
     const MAX_CONN = +Config.get("MAX_CONN", "100");
     BUREAU_HOST = Config.get("BUREAU_HOST", "127.0.0.1");
     CLIENT_TIMEOUT = +Config.get("CLIENT_TIMEOUT", "10000");
+    IPC_SOCKET = Config.get("IPC_SOCKET");
     
     assert(Number.isInteger(PORT), "Invalid port provided");
     assert(Number.isInteger(MAX_CONN) && MAX_CONN >= 0, "Invalid max connection count");
@@ -105,7 +106,7 @@ function main() {
         state.ipSet = new Set<string>;
 
     if (IPC_SOCKET) {
-        state.ipc = new IpcServer({}, state);
+        state.ipc = new IpcServer(ipcHandlers, state);
         state.ipc.init(IPC_SOCKET, () => Log.info(`IPC socket listening at ${IPC_SOCKET}`));
     }
 
@@ -121,6 +122,9 @@ function main() {
         const repl = new Repl(replCmds, replCmdAliases, replCmdList);
         repl.start(state);
     }
+
+    if (process.send)
+        process.send("ready");
 }
 
 function cleanup() {
