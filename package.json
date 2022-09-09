@@ -12,7 +12,7 @@
     "devwls": "npm run build && npm run wls"
   },
   "author": "LeadRDRK",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@types/node": "^18.7.6",
     "@types/node-cleanup": "^2.1.2",
