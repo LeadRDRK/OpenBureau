@@ -129,6 +129,7 @@ export class State {
     }
 
     private setBureauTimeout(bureau: Bureau) {
+        if (bureau.timeout) clearTimeout(bureau.timeout);
         bureau.timeout = setTimeout(() => {
             delete bureau.timeout;
             bureau.process.kill("SIGTERM");
@@ -157,11 +158,10 @@ export class State {
             break;
 
         case "userCount":
-            if (bureau.timeout)
-                clearTimeout(bureau.timeout);
-
             if (content == 0)
                 this.setBureauTimeout(bureau);
+            else if (bureau.timeout)
+                clearTimeout(bureau.timeout);
 
             break;
 
@@ -226,8 +226,10 @@ export class State {
     async pickBureau(world: string) {
         if (world in this.worlds) {
             for (const bureau of this.worlds[world]) {
-                if (!bureau.isFull)
+                if (!bureau.isFull) {
+                    this.setBureauTimeout(bureau);
                     return bureau;
+                }
             }
         }
         return await this.newBureau(world);
