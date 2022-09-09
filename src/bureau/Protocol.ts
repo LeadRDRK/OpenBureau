@@ -241,6 +241,9 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
     switch (type) {
 
     case Opcode.CMSG_NEW_USER: {
+        if (ss.id in state.users)
+            return i;
+
         let res = readStrings(content, 2);
         if (res.length < 2) break;
 
