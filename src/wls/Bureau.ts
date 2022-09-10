@@ -7,6 +7,7 @@ export interface BureauUser {
     name: string;
     avatar: string;
     state: UserState;
+    bcId: number;
     address: string;
 }
 
