@@ -294,7 +294,13 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
         if (state.ipc) {
             state.ipc.broadcastIf({
                 type: "newUser",
-                content: {id: ss.id, name, avatar, state: UserState.ACTIVE, address: ss.address}
+                content: {
+                    id: ss.id,
+                    name, avatar,
+                    state: UserState.ACTIVE,
+                    bcId,
+                    address: ss.address
+                }
             }, client => client.listening.newUser);
             state.ipc.broadcastIf({type: "userCount", content: userCount}, client => client.listening.userCount);
         }
@@ -349,7 +355,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 Log.info(`${oldName} changed their name to ${user.name}`);
 
                 if (state.ipc)
-                    state.ipc.broadcastIf({type: "nameChange", content: {id: ss.id, oldName, newName}},
+                    state.ipc.broadcastIf({type: "nameChange", content: {id: ss.id, name: newName}},
                                           client => client.listening.nameChange);
 
                 break;
@@ -359,12 +365,11 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 const [newAvatar] = readStrings(cData, 1);
                 if (!newAvatar) return i;
 
-                const oldAvatar = user.avatar;
                 user.avatar = newAvatar;
                 Log.info(`${user.name} changed their avatar to ${user.avatar}`);
 
                 if (state.ipc)
-                    state.ipc.broadcastIf({type: "avatarChange", content: {id: ss.id, oldAvatar, newAvatar}},
+                    state.ipc.broadcastIf({type: "avatarChange", content: {id: ss.id, avatar: newAvatar}},
                                           client => client.listening.avatarChange);
                 
                 break;

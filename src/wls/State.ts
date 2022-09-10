@@ -184,13 +184,13 @@ export class State {
             }
 
             if (content.id in bureau.users)
-                bureau.users[content.id].name = content.newName;
+                bureau.users[content.id].name = content.name;
 
             break;
 
         case "avatarChange":
             if (content.id in bureau.users)
-                bureau.users[content.id].avatar = content.newAvatar;
+                bureau.users[content.id].avatar = content.avatar;
 
             break;
 

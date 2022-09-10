@@ -1,17 +1,16 @@
 import { IpcData, IpcHandlers, IpcError } from "../ipc";
-import { State, BureauUtils } from ".";
+import { State, BureauUtils, User } from ".";
 import { Log, BanList, Config } from "../core";
 
-function cloneUser(user: {[key: string]: any}) {
-    let clone: {[key: string]: any} = {};
-    for (const i in user) {
-        if (i == "ss" || i == "rotation") continue;
-
-        if (i == "auras")
-            clone[i] = Array.from(user[i]);
-        else
-            clone[i] = user[i];
-    }
+function cloneUser(user: User) {
+    let clone: {[key: string]: any} = {
+        id: user.id,
+        name: user.name,
+        avatar: user.avatar,
+        state: user.state,
+        bcId: user.bcId,
+        address: user.ss.address
+    };
     return clone;
 }
 
