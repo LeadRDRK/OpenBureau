@@ -16,6 +16,10 @@ function cloneBureau(bureau: Bureau) {
 }
 
 export const ipcHandlers: IpcHandlers = {
+    getServerType() {
+        return {type: "serverType", content: "wls"};
+    },
+
     getBureaus(state: State, world: any) {
         let clone: {[key: number]: {[key: string]: any}} = {};
         let hasWorld = (typeof world == "string");

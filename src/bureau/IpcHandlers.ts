@@ -16,6 +16,10 @@ function cloneUser(user: {[key: string]: any}) {
 }
 
 export const ipcHandlers: IpcHandlers = {
+    getServerType() {
+        return {type: "serverType", content: "bureau"};
+    },
+
     getUsers(state: State, name: any) {
         let clone: {[key: number]: {[key: string]: any}} = {};
         let hasName = (typeof name == "string");
