@@ -1,5 +1,5 @@
 import { State, WlsUtils } from ".";
-import { Log, Utils } from "../core";
+import { Log, UserState, Utils } from "../core";
 import net from "node:net";
 
 export const replCmds: {[key: string]: (state: State, args: string[]) => void} = {
@@ -81,7 +81,8 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
         for (const id in users) {
             let user = users[id];
             output[id] = {
-                Name: user.name
+                Name: user.name,
+                State: UserState[user.state]
             };
         }
 

@@ -110,7 +110,7 @@ export class State {
 
                         ipc.write({
                             type: "listen",
-                            content: ["newUser", "removeUser", "userCount", "nameChange", "avatarChange", "serverFull"]
+                            content: ["newUser", "removeUser", "userCount", "nameChange", "avatarChange", "stateChange", "serverFull"]
                         });
                         ipc.on("data", this.bureauDataListener.bind(this, bureau));
                         
@@ -191,6 +191,12 @@ export class State {
         case "avatarChange":
             if (content.id in bureau.users)
                 bureau.users[content.id].avatar = content.newAvatar;
+
+            break;
+
+        case "stateChange":
+            if (content.id in bureau.users)
+                bureau.users[content.id].state = content.state;
 
             break;
 

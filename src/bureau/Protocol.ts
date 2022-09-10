@@ -1,5 +1,5 @@
-import { State, SocketState, UserState, User } from ".";
-import { Log, Config, Vector3, BanList } from "../core";
+import { State, SocketState, User } from ".";
+import { Log, Config, Vector3, BanList, UserState } from "../core";
 
 const CLIENT_HELLO = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x01, 0x01]);
 const SERVER_HELLO_PREFIX = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
@@ -292,7 +292,10 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
         ]);
 
         if (state.ipc) {
-            state.ipc.broadcastIf({type: "newUser", content: {id: ss.id, name, avatar, address: ss.address}}, client => client.listening.newUser);
+            state.ipc.broadcastIf({
+                type: "newUser",
+                content: {id: ss.id, name, avatar, state: UserState.ACTIVE, address: ss.address}
+            }, client => client.listening.newUser);
             state.ipc.broadcastIf({type: "userCount", content: userCount}, client => client.listening.userCount);
         }
         break;

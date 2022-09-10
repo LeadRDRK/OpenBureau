@@ -1,10 +1,12 @@
 import { IpcClient } from "../ipc";
+import { UserState } from "../core";
 import { ChildProcess } from "node:child_process";
 
 export interface BureauUser {
     id: number;
     name: string;
     avatar: string;
+    state: UserState;
     address: string;
 }
 
