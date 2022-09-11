@@ -74,9 +74,8 @@ export class State {
                 Log.info(`Spawned a new bureau for ${world}, port ${port}, id ${id}`);
                 
                 const t = setTimeout(() => {
-                    Log.error("Bureau process did not respond, terminating");
                     process.kill("SIGTERM");
-                    reject();
+                    reject("Bureau process did not respond, terminating");
                 }, 5000);
 
                 process.on("message", msg => {
@@ -88,9 +87,8 @@ export class State {
                     ipc.socket.once("connect", async () => {
                         const res = await ipc.sendRequest({type: "getMaxConn"});
                         if (res.type == "failed") {
-                            Log.error("Failed get max connection count from bureau, terminating");
                             process.kill("SIGTERM");
-                            reject();
+                            reject("Failed get max connection count from bureau, terminating");
                             return;
                         }
                         const maxConn = res.content;
@@ -123,16 +121,14 @@ export class State {
                         resolve(bureau);
                     })
                     .once("error", () => {
-                        Log.error("Failed to connect to bureau's IPC socket, terminating");
                         process.kill("SIGTERM");
-                        reject();
+                        reject("Failed to connect to bureau's IPC socket, terminating");
                     });
                 });
             })
             .once("error", err => {
                 Log.error(err);
-                Log.error("Failed to spawn a new bureau");
-                reject();
+                reject("Failed to spawn a new bureau");
             })
             .once("exit", () => this.removeBureau(id));
         });

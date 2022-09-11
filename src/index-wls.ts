@@ -52,10 +52,10 @@ function listener(socket: net.Socket) {
             const bureau = await state.pickBureau(world);
             socket.write(`f,0,${BUREAU_HOST},${bureau.port}\0`);
         }
-        catch {
-            socket.destroy();
-            return;
+        catch (err) {
+            if (err) Log.error(err);
         }
+        socket.destroy();
     })
     .on("error", Log.error)
     .on("close", () => Log.verbose(`${address} disconnected`));
