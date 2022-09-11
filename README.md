@@ -16,12 +16,11 @@ No disassembly was done during the development of this project; everything was m
 - No aura/user distance limit.
 - Easy configuration through text files and environment variables.
 - Console commands including kick, ban, etc.
+- Bureau WLS support.
 
 # TODO
 - Properly interpret the player's position and rotation values.
-- Finish the protocol documentation.
 - Implement the Aura system.
-- IPC for communicating with other software.
 
 # Installation
 Requirements:
@@ -60,8 +59,11 @@ This indicates that the log has been paused and the server is waiting for your i
 
 You can run the `help` command to see a list of commands or check [`docs/REPL.md`](docs/REPL.md) for more details.
 
+# WLS
+See [`docs/WLS.md`](docs/WLS.md) for a guide on how to setup and run a WLS server.
+
 # Documentation
-The protocol documentation is available in [`docs/Protocol.md`](docs/Protocol.md)
+The protocol documentation is available in [`docs/Protocol.md`](docs/Protocol.md) and [`docs/WLSProtocol.md`](docs/WLSProtocol.md)
 
 # License
 The source code of the server implementation is licensed under [Apache License 2.0](LICENSE), and all of the documentation in [`/docs`](docs) are licensed under the [Creative Common Attribution-ShareAlike 4.0 license](https://creativecommons.org/licenses/by-sa/4.0).
