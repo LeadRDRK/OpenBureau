@@ -41,7 +41,7 @@ The resulting JavaScript code will now be available in a folder named "dist". If
 # Usage
 To start the server, use the following command:
 ```
-npm run start
+npm run bureau
 ```
 By default, you should now have a Bureau running on port 5126!
 
