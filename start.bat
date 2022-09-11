@@ -1,2 +1,2 @@
 @echo off
-npm run start
+npm run bureau
