@@ -11,11 +11,13 @@ function loadFile(path: string) {
             const line = lines[i];
             if (line.length == 0) continue;
 
-            const [key, value] = line.split("=");
-            if (!value) {
+            const index = line.indexOf("=");
+            if (index == -1) {
                 Log.warn(`Invalid config line: ${line}`);
                 continue;
             }
+            const key = line.slice(0, index),
+                  value = line.slice(index + 1);
             entries[key] = value;
         }
         Log.verbose(`${path} loaded`);
