@@ -1,4 +1,4 @@
-import { State, SocketState, User } from ".";
+import { State, SocketState, User, BureauUtils } from ".";
 import { Log, Config, Vector3, BanList, UserState } from "../core";
 
 const CLIENT_HELLO = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x01, 0x01]);
@@ -60,9 +60,13 @@ interface CommonData {
 }
 
 let auraRadius: number;
+let welcomeMsg: string | undefined;
 
 function init() {
     auraRadius = +Config.get("AURA_RADIUS", "0");
+    welcomeMsg = Config.get("WELCOME_MSG");
+    if (welcomeMsg)
+        welcomeMsg = welcomeMsg.replace(/\\n/g, "\n");
 }
 
 function bufcpy(dst: Buffer, src: Buffer, offset: number) {
@@ -284,6 +288,10 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 reply.push(...buildUserInitMsgs(ss.id, user));
             }
         }
+
+        // Welcome message
+        if (welcomeMsg)
+            reply.push(...BureauUtils.buildSystemChatMsg(ss.id, welcomeMsg));
 
         const userCount = state.getUserCount();
         ss.write(reply);
