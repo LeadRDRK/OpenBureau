@@ -1,8 +1,9 @@
 import { User, State, Protocol } from ".";
-import { Log, BanList } from "../core";
+import { Log, BanList, Config } from "../core";
 
 export const SYSTEM_BCID = 0x0202;
 const systemJoinContent = Protocol.userJoinedContent(SYSTEM_BCID, "System", "avtwrl/01cat.wrl");
+const systemLeaveContent = Protocol.userLeftContent(SYSTEM_BCID);
 
 function teleport(user1: User, user2: User) {
     if (!user1.position || !user2.position) {
@@ -48,12 +49,19 @@ function banName(state: State, name: string) {
 function buildSystemChatMsg(userId: number, chatMsg: string) {
     return [
         {id1: userId, id2: userId, type: Protocol.Opcode.SMSG_USER_JOINED, content: systemJoinContent},
-        Protocol.buildChatSendMsg(userId, SYSTEM_BCID, chatMsg)
+        Protocol.buildChatSendMsg(userId, SYSTEM_BCID, chatMsg),
+        {id1: userId, id2: userId, type: Protocol.Opcode.SMSG_USER_LEFT, content: systemLeaveContent},
     ];
 }
 
+let systemChatPrefix: string | undefined;
 function sendSystemChatMsg(state: State, msg: string) {
-    const chatMsg = `[System] ${msg}`;
+    if (!systemChatPrefix) {
+        systemChatPrefix = Config.get("SYSTEM_CHAT_PREFIX");
+        if (!systemChatPrefix) systemChatPrefix = "[System] ";
+    }
+
+    const chatMsg = systemChatPrefix + msg;
     state.broadcast(user => buildSystemChatMsg(user.id, chatMsg));
     Log.info(`[CHAT] ${chatMsg}`);
 }
