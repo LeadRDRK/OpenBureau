@@ -54,12 +54,10 @@ function buildSystemChatMsg(userId: number, chatMsg: string) {
     ];
 }
 
-let systemChatPrefix: string | undefined;
+let systemChatPrefix: string;
 function sendSystemChatMsg(state: State, msg: string) {
-    if (!systemChatPrefix) {
-        systemChatPrefix = Config.get("SYSTEM_CHAT_PREFIX");
-        if (!systemChatPrefix) systemChatPrefix = "[System] ";
-    }
+    if (!systemChatPrefix)
+        systemChatPrefix = Config.get("SYSTEM_CHAT_PREFIX", "[System] ");
 
     const chatMsg = systemChatPrefix + msg;
     state.broadcast(user => buildSystemChatMsg(user.id, chatMsg));
