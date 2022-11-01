@@ -1,6 +1,6 @@
 {
   "name": "openbureau",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Open source implementation of the Community Place Bureau",
   "main": "index.js",
   "scripts": {
