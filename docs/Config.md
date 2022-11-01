@@ -38,6 +38,6 @@ n:I HATE SAPARI!!!!
 - `USER_TIMEOUT`: How long it takes before the server disconnects from a client if they don't identify themselves, in milliseconds. Default: 10000
 - `LOG_PRIVATE_CHAT`: Log private chat messages. Value is a boolean. If `VERBOSE` is enabled, special message values will also be logged.
 - `LOG_TAG`: Tag to append onto log messages. Useful for identifying log messages from multiple servers using the same output.
-- `WELCOME_MSG`: Message to send to users when they first join the server. Does not contain the system chat prefix.
+- `WELCOME_MSG`: Message to send to users when they first join the server. Does not contain the system chat prefix. Newlines can be included in the message by using `\n`
 - `SYSTEM_CHAT_PREFIX`: The system chat prefix when sending system messages using the `chat` command. Default: `[System] `
 - `VERBOSE`: Enable verbose logging. Value is a boolean.
