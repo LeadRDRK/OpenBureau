@@ -46,7 +46,14 @@ function banName(state: State, name: string) {
     Log.info(`${name} has been banned`);
 }
 
-function buildSystemChatMsg(userId: number, chatMsg: string) {
+let systemChatPrefix: string;
+function buildSystemChatMsg(userId: number, chatMsg: string, includePrefix?: boolean) {
+    if (includePrefix) {
+        if (!systemChatPrefix)
+            systemChatPrefix = Config.get("SYSTEM_CHAT_PREFIX", "[System] ");
+        chatMsg = systemChatPrefix + chatMsg;
+    }
+
     return [
         {id1: userId, id2: userId, type: Protocol.Opcode.SMSG_USER_JOINED, content: systemJoinContent},
         Protocol.buildChatSendMsg(userId, SYSTEM_BCID, chatMsg),
@@ -54,14 +61,9 @@ function buildSystemChatMsg(userId: number, chatMsg: string) {
     ];
 }
 
-let systemChatPrefix: string;
 function sendSystemChatMsg(state: State, msg: string) {
-    if (!systemChatPrefix)
-        systemChatPrefix = Config.get("SYSTEM_CHAT_PREFIX", "[System] ");
-
-    const chatMsg = systemChatPrefix + msg;
-    state.broadcast(user => buildSystemChatMsg(user.id, chatMsg));
-    Log.info(`[CHAT] ${chatMsg}`);
+    state.broadcast(user => buildSystemChatMsg(user.id, msg, true));
+    Log.info(`[CHAT] ${systemChatPrefix}${msg}`);
 }
 
 export const BureauUtils = {

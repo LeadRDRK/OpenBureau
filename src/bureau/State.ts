@@ -1,7 +1,7 @@
 import net from "node:net";
 import crypto from "node:crypto"
-import { Protocol, MessageArray, User } from ".";
-import { Log, IdSet } from "../core";
+import { Protocol, MessageArray, User, BureauUtils } from ".";
+import { Log, IdSet, Config } from "../core";
 import { IpcServer } from "../ipc";
 
 export type BcMsgCallback = (user: User) => MessageArray | undefined;
@@ -43,7 +43,8 @@ export class State {
         const user = this.users[id];
         const bcId = user.bcId;
 
-        Log.info(`${user.name} has left the server`);
+        const leftMsg = `${user.name} has left the server`;
+        Log.info(leftMsg);
         this.bcIdSet.delete(bcId);
         delete this.users[id];
 
@@ -60,6 +61,9 @@ export class State {
                 });
                 user.auras.delete(bcId);
             }
+
+            if (Config.isEnabled("USER_ANNOUNCE"))
+                msgs.push(...BureauUtils.buildSystemChatMsg(user.id, leftMsg, true));
             
             return msgs;
         });

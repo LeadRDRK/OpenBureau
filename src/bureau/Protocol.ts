@@ -267,7 +267,8 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             auras: new Set<number>([bcId]) // Add user to their own aura
         };
         
-        Log.info(`${name} has joined the server`);
+        const joinMsg = `${name} has joined the server`;
+        Log.info(joinMsg);
         Log.verbose(`Avatar: ${avatar}, broadcast id: ${bcId}`);
 
         let bcIdBuf = Buffer.allocUnsafe(4);
@@ -295,9 +296,16 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
 
         const userCount = state.getUserCount();
         ss.write(reply);
-        state.broadcast(user => [
-            {id1: 0, id2: user.id, type: Opcode.SMSG_USER_COUNT, content: userCountContent(userCount)}
-        ]);
+        state.broadcast(user => {
+            var content = [
+                {id1: 0, id2: user.id, type: Opcode.SMSG_USER_COUNT, content: userCountContent(userCount)}
+            ];
+
+            if (Config.isEnabled("USER_ANNOUNCE"))
+                content.push(...BureauUtils.buildSystemChatMsg(user.id, joinMsg, true));
+
+            return content;
+        });
 
         if (state.ipc) {
             state.ipc.broadcastIf({
