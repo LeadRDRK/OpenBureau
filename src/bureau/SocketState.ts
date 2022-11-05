@@ -5,6 +5,7 @@ export class SocketState {
     socket: net.Socket;
     id: number;
     address: string;
+    timeout?: NodeJS.Timeout;
     saidHello = false;
     
     constructor(socket: net.Socket, id: number) {

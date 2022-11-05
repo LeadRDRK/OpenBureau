@@ -88,7 +88,7 @@ function main() {
     const PORT = +Config.get("PORT", "5126");
     const HOST = Config.get("HOST", "0.0.0.0");
     MAX_CONN = +Config.get("MAX_CONN", "256"); // Limited to 256 by design
-    USER_TIMEOUT = +Config.get("USER_TIMEOUT", "10000");
+    USER_TIMEOUT = +Config.get("USER_TIMEOUT", "30000");
     IPC_SOCKET = Config.get("IPC_SOCKET");
     
     if (Config.isEnabled("NO_MULTI"))
@@ -106,9 +106,7 @@ function main() {
         state.ipc.init(IPC_SOCKET, () => Log.info(`IPC socket listening at ${IPC_SOCKET}`));
     }
 
-    // TypeScript is somehow missing the definitions for keepAlive...
-    // @ts-ignore
-    net.createServer({keepAlive: true}, listener)
+    net.createServer(listener)
        .on("listening", () => Log.info(`Listening on port ${PORT}`))
        .on("error", Log.error)
        .listen(PORT, HOST)

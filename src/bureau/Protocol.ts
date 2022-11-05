@@ -61,12 +61,13 @@ interface CommonData {
 
 let auraRadius: number;
 let welcomeMsg: string | undefined;
+let userTimeout: number;
 
 function init() {
     auraRadius = +Config.get("AURA_RADIUS", "0");
     welcomeMsg = Config.get("WELCOME_MSG");
-    if (welcomeMsg)
-        welcomeMsg = welcomeMsg.replace(/\\n/g, "\n");
+    if (welcomeMsg) welcomeMsg = welcomeMsg.replace(/\\n/g, "\n");
+    userTimeout = +Config.get("USER_TIMEOUT", "30000");
 }
 
 function bufcpy(dst: Buffer, src: Buffer, offset: number) {
@@ -493,6 +494,11 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             break;
 
         }
+
+        if (ss.timeout)
+            clearTimeout(ss.timeout);
+
+        ss.timeout = setTimeout(() => ss.socket.destroy(), userTimeout);
         break;
     }
 
@@ -582,7 +588,9 @@ async function processRequest(state: State, ss: SocketState, data: Buffer) {
             let res = Buffer.allocUnsafe(SERVER_HELLO_PREFIX.length + 1);
             let n = bufcpy(res, SERVER_HELLO_PREFIX, 0);
             res.writeUint8(ss.id, n);
+
             ss.socket.write(res);
+            ss.timeout = setTimeout(() => ss.socket.destroy(), userTimeout);
         }
         else ss.socket.destroy();
         return;
