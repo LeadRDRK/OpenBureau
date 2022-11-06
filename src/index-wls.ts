@@ -54,6 +54,7 @@ function listener(socket: net.Socket) {
         }
         catch (err) {
             if (err) Log.error(err);
+            socket.write("f,9\0");
         }
         socket.destroy();
     })
