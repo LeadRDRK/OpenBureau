@@ -40,7 +40,7 @@ export interface PositionMsg extends MessageBase {
 export type MessageArray = (GeneralMsg | PositionMsg)[];
 
 enum CDataType {
-    REQUEST          = 0x10270000,
+    APPL_SPECIFIC    = 0x10270000,
     CHAT_SEND        = 0x09000000,
     NAME_CHANGE      = 0x0D000000,
     AVATAR_CHANGE    = 0x0E000000,
@@ -343,19 +343,11 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
         else if (!isServerRequest)
             break;
 
-        if (type_ == CDataType.REQUEST) {
-            // Type 0x10270000 seems to have an extra byte for some reason?
+        if (type_ == CDataType.APPL_SPECIFIC) {
+            // Seems to have an extra byte for some reason?
             // Content: 2 strings, and another bcId value at the end
             let args = readStrings(content.subarray(10), 2);
             if (args.length != 2) break;
-
-            // Unused
-            // let idType_ = content.readUint16LE(content.length - 4);
-            // let bcId_ = content.readUint16LE(content.length - 2);
-
-            // There seems to be many args[0] types:
-            // startAreaRequest, broadcastRequest, yourStartArea, phaseState and syncDynamicModule
-            // This seems to be a part of the Simple Shared Script system? not sure if the server needs to do anything
         }
         else {
             // All other types must be user-specific

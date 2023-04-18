@@ -187,7 +187,7 @@ As the name implies, this is the most common opcode and is used for a number of 
 
 The type defines what the content contains. Known types:
 ```
-    REQUEST          = 0x10270000,
+    APPL_SPECIFIC    = 0x10270000,
     CHAT_SEND        = 0x09000000,
     NAME_CHANGE      = 0x0D000000,
     AVATAR_CHANGE    = 0x0E000000,
@@ -203,26 +203,24 @@ Possible subtype values are 0, 1, 2 and 3. They define what to do with the messa
 - If subtype is 0 or 1, the message should be broadcasted to other clients.
 - If subtype is 2 or 3, the message should be sent back to the client with the broadcast ID specified in the message. Usually, this is the ID of the same user, however some content types might have a different one (such as `PRIVATE_CHAT`)
 
-Each type has a specific subtype. Note that when broadcasting messages to other clients, ID 1 and ID 2 must be set to those of the client being sent to.
+Each type usually has a specific subtype. Note that when broadcasting messages to other clients, ID 1 and ID 2 must be set to those of the client being sent to.
 
 The following subsections describe the content data of each type:
 
-### REQUEST
-- Subtype = 2
+### APPL_SPECIFIC
+- Subtype = 2 *(other values are possible, but deprecated)*
 
 | Section | Size | Type |
 | --- | --- | --- |
 | Unknown | 1 | uint8 |
-| Request name | ~ | string |
+| Method name | ~ | string |
 | Argument | ~ | string |
 | ID type | 2 | uint16 |
 | Broadcast ID | 2 | uint16 |
 
-Since this message is not meant to be directed to other clients, the ID type must be set to `0xFFFF` and broadcast ID must be set to `0xF1D8`. Therefore, this type of message could also be sent by the client without having a broadcast ID.
+Used to invoke the specified script function. Sent by calling the `vs.Vscp.sendApplSpecificMsgWithDist` Java API.
 
-Known "request names": startAreaRequest, broadcastRequest, yourStartArea, phaseState and syncDynamicModule
-
-It is unknown what this message is for. One hypothesis is that this seems to be a part of the Simple Shared Script system. Nevertheless, the server doesn't really have to do anything with it (except sending it back to the client according to the subtype).
+The ID type must be set to `0xFFFF` and broadcast ID must be set to `0xF1D8` *(unknown purpose/unconfirmed)*. This type of message could also be sent by the client without having a broadcast ID.
 
 ### CHAT_SEND
 - Subtype = 0
