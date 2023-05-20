@@ -28,8 +28,10 @@ All of the section sizes provided here are in bytes. Sections with `~` as the si
 - `int8`, `int16`, `int32`: n-bit signed integer
 - `uint8`, `uint16`, `uint32`: n-bit unsigned integer
 - `string`: Null-terminated string. Does not have a determined size.
+- `int32float`: Special type used to store floating point values as 32-bit big-endian signed integers. The float value would be multiplied by 65536 and then casted to a 32-bit signed integer.
+    - The original float value is calculated by dividing the integer by 65536.
 
-All integer types are in little-endian byte order.
+All other integer types are in little-endian byte order.
 
 ## Aura
 Throughout the documentation, you'll find mentions of a user's "aura". This is used to refer to the Aura system used by the server.
@@ -252,13 +254,13 @@ Used to announce an avatar change.
 ### ROTATION_UPDATE
 - Subtype = 1
 
-Used to update the character's rotation.
+Used to update the character's rotation. Content data is a 3x4 matrix which contains 12 int32float values.
 
 | Section | Size | Type |
 | --- | --- | --- |
-| Unknown | 48 | data |
-
-It is not known how the rotation data should be interpreted. If we were to assume that all of the values are 4 bytes floats, then there would be 12 float values, or a 4x3 matrix.
+| Matrix value 1 | 4 | int32float |
+| ... |  |  |
+| Matrix value 12 | 4 | int32float |
 
 ### CHARACTER_UPDATE
 - Subtype = 1
@@ -279,8 +281,6 @@ The data will look something like this: `sleep:0 1:000000000000:58:0:`
         - The amount of values depends on how much body parts the user's avatar has.
     - After that is the minutes spent using that particular avatar (58)
     - The final value is user's medal, which is awarded if they have spent enough time using that avatar (none = 0, happy = 1, lucky = 2, lovely = 3).
-
-Thanks to [barra](https://barrarchiverio.7m.pl/) for providing the information here.
 
 ### VOICE_STATE
 Used to update the voice chat state.
@@ -365,22 +365,28 @@ Used to update the character's position.
 | ID 2 | 1 | uint8 |
 | ID type | 2 | uint16 |
 | Broadcast ID | 2 | uint16 |
-| X | 4 | unknown |
-| Y | 4 | unknown |
-| Z | 4 | unknown |
+| X | 4 | int32float |
+| Y | 4 | int32float |
+| Z | 4 | int32float |
+| Unknown | 2 | uint16 |
 
 - Section type = 2
 
 ID 1 and ID 2 are always set to the connection ID and the client ID of the user, repectively. ID type must always be 0.
 
+The unknown value is always set to `0x100`.
+
 The server should broadcast this message to other users that are within the aura of the current user. ID 1 and ID 2 of the broadcasted message must be set to those of the user being sent to.
 
-The server can also send a Position Update message to update a client's own character position.
-
-It is not known how the coordinates should be interpreted. The first two bits of the value seems to be used as signbits, with `0xFF` for negative, `0x00` for positive. The other 3 bytes varies wildly depending on the position.
+The server can also send a Position Update message to update any client's own character position.
 
 # Limitations
 By design, the protocol is limited to 256 concurrent users. This is because, the `hello` packet that the server sends only uses an uint8 to send the connection ID; effectively limiting its range from 0 to 255, thus limiting it to 256 possible values. However, it is still entirely possible for a server to handle more than that, as TCP doesn't limit the amount of active connections, though it is impractical to do so. *This is where WLS comes into use.*
+
+# Special thanks
+This documentation was made possible by the help of these folks:
+- [barra](https://barrarchiverio.7m.pl/): Provided information for the character update data.
+- [Twig](https://github.com/ANormalTwig): Discovered how the character position and rotation values are encoded.
 
 # License
 This documentation is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0)

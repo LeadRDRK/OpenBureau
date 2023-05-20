@@ -1,5 +1,5 @@
 import { State, SocketState, User, BureauUtils } from ".";
-import { Log, Config, Vector3, BanList, UserState } from "../core";
+import { Log, Config, Vector3, BanList, UserState, Matrix3x4 } from "../core";
 
 const CLIENT_HELLO = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x01, 0x01]);
 const SERVER_HELLO_PREFIX = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
@@ -33,7 +33,6 @@ export interface GeneralMsg extends MessageBase {
 
 export interface PositionMsg extends MessageBase {
     bcId: number;
-    // for now position is passed as uint32s
     position: Vector3;
 }
 
@@ -104,6 +103,16 @@ function writeBcId(buf: Buffer, idType: number, bcId: number, offset: number) {
     return n;
 }
 
+function readInt32Float(data: Buffer, offset: number) {
+    return data.readInt32BE(offset) / 65536;
+}
+
+function writeInt32Float(data: Buffer, value: number, offset: number) {
+    value *= 65536;
+    value = Math.max(-0x80000000, Math.min(value, 0x7FFFFFFF));
+    return data.writeInt32BE(value, offset);
+}
+
 function buildPacket(messages: MessageArray, buf?: Buffer): Buffer {
     let totalSize = 0;
     for (let i = 0; i < messages.length; ++i) {
@@ -137,9 +146,9 @@ function buildPacket(messages: MessageArray, buf?: Buffer): Buffer {
             j = buf.writeUint8(msg.id2, j);
             j = buf.writeUint16LE(0x00, j);
             j = buf.writeUInt16LE(msg.bcId, j);
-            j = buf.writeUint32LE(pos.x, j);
-            j = buf.writeUint32LE(pos.y, j);
-            j = buf.writeUint32LE(pos.z, j);
+            j = writeInt32Float(buf, pos.x, j);
+            j = writeInt32Float(buf, pos.y, j);
+            j = writeInt32Float(buf, pos.z, j);
             j = buf.writeUint16LE(0x100, j);
         }
     }
@@ -168,6 +177,15 @@ function buildCharUpdateMsg(id: number, bcId: number, characterData: string): Ge
     };
 }
 
+function rotationContent(rotation: Matrix3x4) {
+    let buf = Buffer.allocUnsafe(48);
+    let j = 0;
+    for (let i = 0; i < 12; ++i) {
+        j = writeInt32Float(buf, rotation.m[i], j);
+    }
+    return buf;
+}
+
 function buildUserInitMsgs(id: number, user: User): MessageArray {
     let bcId = user.bcId;
     let ujContent = userJoinedContent(bcId, user.name, user.avatar);
@@ -179,7 +197,12 @@ function buildUserInitMsgs(id: number, user: User): MessageArray {
         msgs.push({id1: id, id2: id, bcId, position: user.position});
 
     if (user.rotation) {
-        let rtContent = buildCommonData({idType: 0x00, bcId, type: CDataType.ROTATION_UPDATE, subtype: 1, content: user.rotation!});
+        let rtContent = buildCommonData({
+            idType: 0x00, bcId, 
+            type: CDataType.ROTATION_UPDATE,
+            subtype: 1,
+            content: rotationContent(user.rotation)
+        });
         msgs.push({id1: id, id2: id, type: Opcode.MSG_COMMON, content: rtContent});
     }
 
@@ -370,7 +393,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 break;
             }
 
-            case CDataType.AVATAR_CHANGE:
+            case CDataType.AVATAR_CHANGE: {
                 const [newAvatar] = readStrings(cData, 1);
                 if (!newAvatar) return i;
 
@@ -382,21 +405,31 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                                           client => client.listening.avatarChange);
                 
                 break;
+            }
 
-            case CDataType.ROTATION_UPDATE: 
-                // TODO: properly interpret rotation values
-                // for now store it as a buffer
-                user.rotation = Buffer.from(cData.subarray(0, 48));
+            case CDataType.ROTATION_UPDATE: {
+                if (cData.length != 48) {
+                    Log.verbose("Invalid rotation data");
+                    return i;
+                }
+
+                if (!user.rotation) user.rotation = new Matrix3x4;
+                let m = user.rotation.m;
+                for (let i = 0; i < 12; ++i) {
+                    m[i] = readInt32Float(cData, i * 4);
+                }
                 break;
+            }
 
-            case CDataType.CHARACTER_UPDATE:
+            case CDataType.CHARACTER_UPDATE: {
                 const [cd] = readStrings(cData, 1);
                 if (!cd) return i;
 
                 user.characterData = cd;
                 break;
+            }
 
-            case CDataType.CHAT_SEND:
+            case CDataType.CHAT_SEND: {
                 const [message] = readStrings(cData, 1);
                 if (!message) return i;
 
@@ -406,6 +439,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                     state.ipc.broadcastIf({type: "chat", content: {id: ss.id, message}}, client => client.listening.chat);
 
                 break;
+            }
 
             case CDataType.VOICE_STATE: {
                 let value = cData.readUint8(5);
@@ -539,10 +573,9 @@ function processPosUpdate(state: State, ss: SocketState, data: Buffer, i: number
         return i;
     }
 
-    // TODO: Properly interpret position values
-    let x = data.readUint32LE(i + 13);
-    let y = data.readUint32LE(i + 17);
-    let z = data.readUint32LE(i + 21);
+    let x = readInt32Float(data, i + 13);
+    let y = readInt32Float(data, i + 17);
+    let z = readInt32Float(data, i + 21);
     if (!user.position) user.position = new Vector3;
     user.position.set(x, y, z);
     

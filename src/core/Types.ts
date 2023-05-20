@@ -19,3 +19,35 @@ export class Vector3 {
 
     // TODO
 }
+
+export class Matrix3x4 {
+    m = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0
+    ];
+
+    set(arr: number[]) {
+        if (arr.length != 12)
+            throw new Error("Invalid matrix array");
+
+        this.m = arr;
+    }
+
+    setIdentity() {
+        this.m = [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0
+        ];
+    }
+
+    getValue(row: number, column: number) {
+        if (row >= 3 || column >= 4)
+            throw new Error("Invalid row or column index");
+
+        return this.m[row * 4 + column];
+    }
+
+    // TODO
+}
