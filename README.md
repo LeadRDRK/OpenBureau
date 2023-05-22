@@ -1,5 +1,6 @@
 # OpenBureau
-<img align="right" height="200px" src="docs/logo-icon.png">
+<img align="right" height="200px" src="docs/logo-small.png">
+<br>
 
 OpenBureau is an open source server implementation and documentation of the Virtual Society Server-Client Protocol, as used by the Community Place Browser and Bureau. This project exists to preserve and develop upon the VSCP and its uses, as well as providing a modern, cross-platform server software.
 
