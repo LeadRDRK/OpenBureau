@@ -193,7 +193,7 @@ The type defines what the content contains. Known types:
     CHAT_SEND        = 0x09000000,
     NAME_CHANGE      = 0x0D000000,
     AVATAR_CHANGE    = 0x0E000000,
-    ROTATION_UPDATE  = 0x02000000,
+    TRANSFORM_UPDATE = 0x02000000,
     CHARACTER_UPDATE = 0x0C000000,
     VOICE_STATE      = 0x12000000,
     UNNAMED_1        = 0x10000000,
@@ -251,16 +251,21 @@ Used to announce an avatar change.
 | --- | --- | --- |
 | New avatar | ~ | string |
 
-### ROTATION_UPDATE
+### TRANSFORM_UPDATE
 - Subtype = 1
 
-Used to update the character's rotation. Content data is a 3x4 matrix which contains 12 int32float values.
+Used to update the character's transformation matrix and position. The transformation matrix is 3x3 matrix with 9 int32float values.
 
 | Section | Size | Type |
 | --- | --- | --- |
 | Matrix value 1 | 4 | int32float |
 | ... |  |  |
-| Matrix value 12 | 4 | int32float |
+| Matrix value 9 | 4 | int32float |
+| X | 4 | int32float |
+| Y | 4 | int32float |
+| Z | 4 | int32float |
+
+Note: Due to how the data is laid out, it's safe to assume that the character's position (or translation) is not contained within the transformation matrix.
 
 ### CHARACTER_UPDATE
 - Subtype = 1

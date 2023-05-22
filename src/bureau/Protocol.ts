@@ -1,5 +1,5 @@
 import { State, SocketState, User, BureauUtils } from ".";
-import { Log, Config, Vector3, BanList, UserState, Matrix3x4 } from "../core";
+import { Log, Config, Vector3, BanList, UserState, Matrix3 } from "../core";
 
 const CLIENT_HELLO = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x01, 0x01]);
 const SERVER_HELLO_PREFIX = Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
@@ -43,7 +43,7 @@ enum CDataType {
     CHAT_SEND        = 0x09000000,
     NAME_CHANGE      = 0x0D000000,
     AVATAR_CHANGE    = 0x0E000000,
-    ROTATION_UPDATE  = 0x02000000,
+    TRANSFORM_UPDATE = 0x02000000,
     CHARACTER_UPDATE = 0x0C000000,
     VOICE_STATE      = 0x12000000,
     UNNAMED_1        = 0x10000000,
@@ -177,12 +177,15 @@ function buildCharUpdateMsg(id: number, bcId: number, characterData: string): Ge
     };
 }
 
-function rotationContent(rotation: Matrix3x4) {
+function buildTransformContent(rotation: Matrix3, position: Vector3) {
     let buf = Buffer.allocUnsafe(48);
     let j = 0;
-    for (let i = 0; i < 12; ++i) {
+    for (let i = 0; i < 9; ++i) {
         j = writeInt32Float(buf, rotation.m[i], j);
     }
+    j = writeInt32Float(buf, position.x, j);
+    j = writeInt32Float(buf, position.y, j);
+    j = writeInt32Float(buf, position.z, j);
     return buf;
 }
 
@@ -193,17 +196,18 @@ function buildUserInitMsgs(id: number, user: User): MessageArray {
         {id1: user.id, id2: id, type: Opcode.SMSG_USER_JOINED, content: ujContent}
     ];
 
-    if (user.position)
+    if (user.position) {
         msgs.push({id1: id, id2: id, bcId, position: user.position});
 
-    if (user.rotation) {
-        let rtContent = buildCommonData({
-            idType: 0x00, bcId, 
-            type: CDataType.ROTATION_UPDATE,
-            subtype: 1,
-            content: rotationContent(user.rotation)
-        });
-        msgs.push({id1: id, id2: id, type: Opcode.MSG_COMMON, content: rtContent});
+        if (user.rotation) {
+            let rtContent = buildCommonData({
+                idType: 0x00, bcId, 
+                type: CDataType.TRANSFORM_UPDATE,
+                subtype: 1,
+                content: buildTransformContent(user.rotation, user.position)
+            });
+            msgs.push({id1: id, id2: id, type: Opcode.MSG_COMMON, content: rtContent});
+        }
     }
 
     if (user.characterData)
@@ -407,17 +411,18 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 break;
             }
 
-            case CDataType.ROTATION_UPDATE: {
+            case CDataType.TRANSFORM_UPDATE: {
                 if (cData.length != 48) {
-                    Log.verbose("Invalid rotation data");
+                    Log.verbose("Invalid transform data");
                     return i;
                 }
 
-                if (!user.rotation) user.rotation = new Matrix3x4;
+                if (!user.rotation) user.rotation = new Matrix3;
                 let m = user.rotation.m;
-                for (let i = 0; i < 12; ++i) {
+                for (let i = 0; i < 9; ++i) {
                     m[i] = readInt32Float(cData, i * 4);
                 }
+                readPosition(cData, 36, user);
                 break;
             }
 
@@ -555,6 +560,15 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
     return i;
 }
 
+function readPosition(data: Buffer, offset: number, user: User) {
+    let x = readInt32Float(data, offset);
+    let y = readInt32Float(data, offset + 4);
+    let z = readInt32Float(data, offset + 8);
+    if (!user.position) user.position = new Vector3;
+    user.position.set(x, y, z);
+    return user.position;
+}
+
 function processPosUpdate(state: State, ss: SocketState, data: Buffer, i: number): number {
     if (data.length - i != 27 || !(ss.id in state.users)) {
         Log.verbose(`Invalid data received from id ${ss.id}`);
@@ -573,30 +587,21 @@ function processPosUpdate(state: State, ss: SocketState, data: Buffer, i: number
         return i;
     }
 
-    let x = readInt32Float(data, i + 13);
-    let y = readInt32Float(data, i + 17);
-    let z = readInt32Float(data, i + 21);
-    if (!user.position) user.position = new Vector3;
-    user.position.set(x, y, z);
-    
+    var position = readPosition(data, 13, user);
+
     state.broadcast(other => {
         if (other.id == user.id) return;
-        // TODO: actually check if user is within the aura's radius
-        if (!auraRadius) {
-            let msgs: MessageArray = [];
+        if (!auraRadius || (other.position && position.distance(other.position) < auraRadius)) {
             if (!other.auras.has(bcId)) {
                 other.auras.add(bcId);
                 // (this will also include the position data)
                 return buildUserInitMsgs(other.id, user);
             }
-            msgs.push({id1: other.id, id2: other.id, bcId, position: user.position!});
-            return msgs;
+            return [{id1: other.id, id2: other.id, bcId, position}];
         }
         else if (other.auras.has(bcId)) {
             other.auras.delete(bcId);
-            return [
-                {id1: other.id, id2: other.id, type: Opcode.SMSG_USER_LEFT, content: userLeftContent(bcId)}
-            ];
+            return [{id1: other.id, id2: other.id, type: Opcode.SMSG_USER_LEFT, content: userLeftContent(bcId)}];
         }
     });
     

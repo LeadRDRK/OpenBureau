@@ -1,4 +1,4 @@
-import { Vector3, UserState, Matrix3x4 } from "../core";
+import { Vector3, UserState, Matrix3 } from "../core";
 import { SocketState } from ".";
 
 export interface User {
@@ -10,6 +10,6 @@ export interface User {
     bcId: number;
     auras: Set<number>;
     position?: Vector3;
-    rotation?: Matrix3x4;
+    rotation?: Matrix3;
     characterData?: string;
 }

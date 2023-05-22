@@ -17,18 +17,31 @@ export class Vector3 {
         this.z = z;
     }
 
+    distance(v: Vector3) {
+        let s = this.subtract(v);
+        return Math.sqrt(s.x * s.x + s.y * s.y + s.z * s.z);
+    }
+
+    subtract(v: Vector3) {
+        return new Vector3(
+            this.x - v.x,
+            this.y - v.y,
+            this.z - v.z
+        );
+    }
+
     // TODO
 }
 
-export class Matrix3x4 {
+export class Matrix3 {
     m = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1
     ];
 
     set(arr: number[]) {
-        if (arr.length != 12)
+        if (arr.length != 9)
             throw new Error("Invalid matrix array");
 
         this.m = arr;
@@ -36,17 +49,30 @@ export class Matrix3x4 {
 
     setIdentity() {
         this.m = [
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1
         ];
     }
 
     getValue(row: number, column: number) {
-        if (row >= 3 || column >= 4)
+        if (row >= 3 || column >= 3)
             throw new Error("Invalid row or column index");
 
-        return this.m[row * 4 + column];
+        return this.m[row * 3 + column];
+    }
+
+    getRotationX() {
+        return Math.atan2(this.m[7], this.m[8]);
+    }
+
+    getRotationY() {
+        var m = this.m;
+        return Math.atan2(-m[6], Math.sqrt(m[7] * m[7] + m[8] * m[8]));
+    }
+
+    getRotationZ() {
+        return Math.atan2(this.m[3], this.m[0]);
     }
 
     // TODO
