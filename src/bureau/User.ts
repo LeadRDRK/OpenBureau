@@ -10,6 +10,6 @@ export interface User {
     bcId: number;
     auras: Set<number>;
     position?: Vector3;
-    rotation?: Matrix3;
+    transform?: Matrix3;
     characterData?: string;
 }

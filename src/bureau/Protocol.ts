@@ -177,11 +177,11 @@ function buildCharUpdateMsg(id: number, bcId: number, characterData: string): Ge
     };
 }
 
-function buildTransformContent(rotation: Matrix3, position: Vector3) {
+function buildTransformContent(transform: Matrix3, position: Vector3) {
     let buf = Buffer.allocUnsafe(48);
     let j = 0;
     for (let i = 0; i < 9; ++i) {
-        j = writeInt32Float(buf, rotation.m[i], j);
+        j = writeInt32Float(buf, transform.m[i], j);
     }
     j = writeInt32Float(buf, position.x, j);
     j = writeInt32Float(buf, position.y, j);
@@ -199,12 +199,12 @@ function buildUserInitMsgs(id: number, user: User): MessageArray {
     if (user.position) {
         msgs.push({id1: id, id2: id, bcId, position: user.position});
 
-        if (user.rotation) {
+        if (user.transform) {
             let rtContent = buildCommonData({
                 idType: 0x00, bcId, 
                 type: CDataType.TRANSFORM_UPDATE,
                 subtype: 1,
-                content: buildTransformContent(user.rotation, user.position)
+                content: buildTransformContent(user.transform, user.position)
             });
             msgs.push({id1: id, id2: id, type: Opcode.MSG_COMMON, content: rtContent});
         }
@@ -417,8 +417,8 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                     return i;
                 }
 
-                if (!user.rotation) user.rotation = new Matrix3;
-                let m = user.rotation.m;
+                if (!user.transform) user.transform = new Matrix3;
+                let m = user.transform.m;
                 for (let i = 0; i < 9; ++i) {
                     m[i] = readInt32Float(cData, i * 4);
                 }
