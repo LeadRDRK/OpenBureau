@@ -17,10 +17,6 @@ No disassembly was done during the development of this project; everything was m
 - Console commands including kick, ban, etc.
 - Bureau WLS support.
 
-# TODO
-- Properly interpret the player's position and rotation values.
-- Implement the Aura system.
-
 # Installation
 Requirements:
 - [node.js](https://nodejs.org) v16 or later
