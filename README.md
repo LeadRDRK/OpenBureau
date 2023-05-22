@@ -6,8 +6,8 @@ OpenBureau is an open source server implementation and documentation of the Virt
 
 No disassembly was done during the development of this project; everything was made possible with manual packet decoding, time and dedication.
 
-<br><br>
-<p align="right"><b>Logo by <a href="https://twitter.com/dark_twter">Poly</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></p>
+<br>
+<p align="right"><b>Logo by <a href="https://twitter.com/dark_twter">Poly</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></p>
 
 # Features
 - Near faithful implementation of the VSCP.
