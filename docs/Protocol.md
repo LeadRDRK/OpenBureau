@@ -36,9 +36,9 @@ All other integer types are in little-endian byte order.
 ## Aura
 Throughout the documentation, you'll find mentions of a user's "aura". This is used to refer to the Aura system used by the server.
 
-In a nutshell: Each user will have a defined radius where they can be seen; that is their aura. If a user's aura overlaps another user's, then they can "see" each other. It is a bit more involved than this though, as their orientation also matters.
+In a nutshell: Each user will have a defined radius where they can be seen; that is their aura. If a user's aura overlaps another user's, then they can "see" each other.
 
-Reference: Benford, S., & Fahlén, L. (1993). A spatial model of interaction in large virtual environments. In ECSCW 1993: Proceedings of the Third European Conference on Computer Supported Cooperative Work. Kluwer Academic Publishers, Dordrecht, The Netherlands.
+This system is referenced from: Benford, S., & Fahlén, L. (1993). A spatial model of interaction in large virtual environments. In ECSCW 1993: Proceedings of the Third European Conference on Computer Supported Cooperative Work. Kluwer Academic Publishers, Dordrecht, The Netherlands.
 
 The Aura system has influence on what data the client will accept from other users. If a client was sent any message that makes use of the broadcast ID (which also identifies their Aura) from another user that can't be "seen" by it, it will actively ignore the message. The server should also not send any message that are not within their aura.
 
@@ -254,7 +254,7 @@ Used to announce an avatar change.
 ### TRANSFORM_UPDATE
 - Subtype = 1
 
-Used to update the character's transformation matrix and position. The transformation matrix is 3x3 matrix with 9 int32float values.
+Used to update the character's transformation matrix and position. The transformation matrix is a 3x3 matrix with 9 int32float values.
 
 | Section | Size | Type |
 | --- | --- | --- |
