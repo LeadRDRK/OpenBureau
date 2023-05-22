@@ -309,15 +309,6 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             {id1: ss.id, id2: ss.id, type: Opcode.SMSG_BROADCAST_ID, content: bcIdBuf}
         ];
 
-        // Also immediately send info of other users if the aura system is not enabled
-        if (!auraRadius) {
-            for (const id in state.users) {
-                let user = state.users[id];
-                if (user.id == ss.id) continue;
-                reply.push(...buildUserInitMsgs(ss.id, user));
-            }
-        }
-
         // Welcome message
         if (welcomeMsg)
             reply.push(...BureauUtils.buildSystemChatMsg(ss.id, welcomeMsg));
