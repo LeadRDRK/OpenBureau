@@ -106,11 +106,21 @@ function main() {
         state.ipc.init(IPC_SOCKET, () => Log.info(`IPC socket listening at ${IPC_SOCKET}`));
     }
 
-    net.createServer(listener)
-       .on("listening", () => Log.info(`Listening on port ${PORT}`))
-       .on("error", Log.error)
-       .listen(PORT, HOST)
-       .maxConnections = MAX_CONN;
+    var server = net.createServer(listener)
+        .on("listening", () => Log.info(`Listening on port ${PORT}`))
+        .on("error", (err: NodeJS.ErrnoException) => {
+            if (err.code == "EADDRINUSE") {
+                Log.error("Port " + PORT + " is in use, retrying in 5 seconds...");
+                setTimeout(() => {
+                    server.close();
+                    server.listen(PORT, HOST);
+                }, 5000);
+            }
+            else Log.error(err);
+       })
+       .listen(PORT, HOST);
+    
+    server.maxConnections = MAX_CONN;
 
     nodeCleanup(cleanup);
     
