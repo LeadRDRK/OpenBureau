@@ -594,13 +594,20 @@ function processPosUpdate(state: State, ss: SocketState, data: Buffer, i: number
         if (!auraRadius || (other.position && position.distance(other.position) < auraRadius)) {
             if (!other.auras.has(bcId)) {
                 other.auras.add(bcId);
-                // (this will also include the position data)
+                user.auras.add(other.bcId);
+                // Send user init data to both of them
+                user.ss.write(buildUserInitMsgs(user.id, other));
                 return buildUserInitMsgs(other.id, user);
             }
-            return [{id1: other.id, id2: other.id, bcId, position}];
+            else
+                return [{id1: other.id, id2: other.id, bcId, position}];
         }
         else if (other.auras.has(bcId)) {
             other.auras.delete(bcId);
+            user.auras.delete(other.bcId);
+            user.ss.write([
+                {id1: user.id, id2: user.id, type: Opcode.SMSG_USER_LEFT, content: userLeftContent(other.bcId)}
+            ]);
             return [{id1: other.id, id2: other.id, type: Opcode.SMSG_USER_LEFT, content: userLeftContent(bcId)}];
         }
     });
