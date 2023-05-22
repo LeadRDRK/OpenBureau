@@ -1,7 +1,7 @@
 import net from "node:net";
 import fs from "node:fs";
 import assert from "assert";
-import { Log, Config, Repl, BanList } from "./core";
+import { Log, Config, Repl, BanList, Utils } from "./core";
 import { Protocol, State, SocketState, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList, ipcHandlers } from "./bureau";
 import { IpcServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
@@ -106,20 +106,7 @@ function main() {
         state.ipc.init(IPC_SOCKET, () => Log.info(`IPC socket listening at ${IPC_SOCKET}`));
     }
 
-    var server = net.createServer(listener)
-        .on("listening", () => Log.info(`Listening on port ${PORT}`))
-        .on("error", (err: NodeJS.ErrnoException) => {
-            if (err.code == "EADDRINUSE") {
-                Log.error("Port " + PORT + " is in use, retrying in 5 seconds...");
-                setTimeout(() => {
-                    server.close();
-                    server.listen(PORT, HOST);
-                }, 5000);
-            }
-            else Log.error(err);
-       })
-       .listen(PORT, HOST);
-    
+    var server = Utils.createTCPServer(PORT, HOST, listener);
     server.maxConnections = MAX_CONN;
 
     nodeCleanup(cleanup);

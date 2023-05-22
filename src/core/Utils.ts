@@ -1,4 +1,5 @@
 import { Log, BanList } from ".";
+import net from "node:net";
 
 function pluralize(count: number, noun: string, suffix = "s") {
     return `${count} ${noun}${count !== 1 ? suffix : ""}`;
@@ -77,6 +78,24 @@ function unbanNameCmd(_: any, args: string[]) {
     Log.info(`${name} has been unbanned`);
 }
 
+function createTCPServer(port: number, host: string, listener?: ((socket: net.Socket) => void)) {
+    var server = net.createServer(listener)
+        .on("listening", () => Log.info(`Listening on port ${port}`))
+        .on("error", (err: NodeJS.ErrnoException) => {
+            if (err.code == "EADDRINUSE") {
+                Log.error(`Port ${port} is in use, retrying in 5 seconds...`);
+                setTimeout(() => {
+                    server.close();
+                    server.listen(port, host);
+                }, 5000);
+            }
+            else Log.error(err);
+       })
+       .listen(port, host);
+
+    return server;
+}
+
 export const Utils = {
     pluralize,
     pluralNoun,
@@ -84,5 +103,6 @@ export const Utils = {
     bannedIpsCmd,
     bannedNamesCmd,
     unbanCmd,
-    unbanNameCmd
+    unbanNameCmd,
+    createTCPServer
 }

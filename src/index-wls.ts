@@ -1,7 +1,7 @@
 import net from "node:net";
 import fs from "node:fs";
 import assert from "assert";
-import { Log, Config, BanList, Repl } from "./core";
+import { Log, Config, BanList, Repl, Utils } from "./core";
 import { State, replCmds, replCmdAliases, replCmdList, ipcHandlers } from "./wls";
 import { IpcServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
@@ -111,11 +111,8 @@ function main() {
         state.ipc.init(IPC_SOCKET, () => Log.info(`IPC socket listening at ${IPC_SOCKET}`));
     }
 
-    net.createServer(listener)
-       .on("listening", () => Log.info(`Listening on port ${PORT}`))
-       .on("error", Log.error)
-       .listen(PORT, HOST)
-       .maxConnections = MAX_CONN;
+    var server = Utils.createTCPServer(PORT, HOST, listener);
+    server.maxConnections = MAX_CONN;
     
     nodeCleanup(cleanup);
 
