@@ -1,5 +1,5 @@
 import { User, State, Protocol } from ".";
-import { Log, BanList, Config } from "../core";
+import { Log, BanList, Config, Vector3 } from "../core";
 
 export const SYSTEM_BCID = 0x0202;
 const systemJoinContent = Protocol.userJoinedContent(SYSTEM_BCID, "System", "avtwrl/01cat.wrl");
@@ -11,8 +11,8 @@ function teleport(user1: User, user2: User) {
         return false;
     }
 
-    user1.position = user2.position;
-    user1.position.y += 0x100;
+    var p = user2.position;
+    user1.position.set(p.x + 2, p.y, p.z);
     user1.ss.write([{id1: user1.id, id2: user1.id, bcId: user1.bcId, position: user1.position}]);
     Log.info(`Teleported ${user1.name} to ${user2.name}`);
     return true;
