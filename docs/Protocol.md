@@ -38,7 +38,7 @@ Throughout the documentation, you'll find mentions of a user's "aura". This is u
 
 In a nutshell: Each user will have a defined radius where they can be seen; that is their aura. If a user's aura overlaps another user's, then they can "see" each other. It is a bit more involved than this though, as their orientation also matters.
 
-(See "A Spatial Model of Interaction in Large Virtual Environments" by Steve Benford & Lennart Fahlén for more details, in ECSCW '93, page 109-124)
+Reference: Benford, S., & Fahlén, L. (1993). A spatial model of interaction in large virtual environments. In ECSCW 1993: Proceedings of the Third European Conference on Computer Supported Cooperative Work. Kluwer Academic Publishers, Dordrecht, The Netherlands.
 
 The Aura system has influence on what data the client will accept from other users. If a client was sent any message that makes use of the broadcast ID (which also identifies their Aura) from another user that can't be "seen" by it, it will actively ignore the message. The server should also not send any message that are not within their aura.
 
