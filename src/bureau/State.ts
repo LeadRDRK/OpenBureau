@@ -10,8 +10,9 @@ export type BcMsgCallback = (user: User) => MessageArray | undefined;
 type StateEvents = {
     newUser: (user: User) => void;
     applSpecific: (args: string[]) => void;
-    chatSend: (detail: { message: string }) => void;
-    privateChat: (detail: { message: string }) => void;
+    chatSend: (detail: { id: number, message: string }) => void;
+    privateChat: (detail: { from: number, to: number, message: string }) => void;
+    removeUser: (user: User) => void;
 }
 
 export class State extends (EventEmitter as new () => TypedEventEmitter<StateEvents>) {
@@ -51,6 +52,8 @@ export class State extends (EventEmitter as new () => TypedEventEmitter<StateEve
         const user = this.users[id];
         const bcId = user.bcId;
 
+        this.emit("removeUser", user);
+
         const leftMsg = `${user.name} has left the server`;
         Log.info(leftMsg);
         this.bcIdSet.delete(bcId);
@@ -75,11 +78,6 @@ export class State extends (EventEmitter as new () => TypedEventEmitter<StateEve
             
             return msgs;
         });
-
-        if (this.ipc) {
-            this.ipc.broadcastIf({type: "removeUser", content: id}, client => client.listening.removeUser);
-            this.ipc.broadcastIf({type: "userCount", content: userCount}, client => client.listening.userCount);
-        }
     }
 
     generateBcId(): Promise<number> {
@@ -99,6 +97,48 @@ export class State extends (EventEmitter as new () => TypedEventEmitter<StateEve
                 this.bcIdSet.add(value);
                 resolve(value);
             });
+        });
+    }
+
+    initIpcEvents() {
+        if (!this.ipc) return;
+        let ipc = this.ipc;
+        this.on("newUser", user => {
+            ipc.broadcastIf({
+                type: "newUser",
+                content: {
+                    id: user.id,
+                    name: user.name,
+                    avatar: user.avatar,
+                    state: user.state,
+                    bcId: user.bcId,
+                    address: user.ss.address
+                }
+            }, client => client.listening.newUser);
+            ipc.broadcastIf({type: "userCount", content: this.getUserCount()}, client => client.listening.userCount);
+
+            user.on("nameChange", () => {
+                ipc.broadcastIf({type: "nameChange", content: {id: user.id, name: user.name}},
+                                client => client.listening.nameChange);
+            })
+            .on("avatarChange", () => {
+                ipc.broadcastIf({type: "avatarChange", content: {id: user.id, avatar: user.avatar}},
+                                client => client.listening.avatarChange);
+            })
+            .on("stateChange", () => {
+                ipc.broadcastIf({type: "stateChange", content: {id: user.id, state: user.state}},
+                                client => client.listening.stateChange);
+            });
+        })
+        .on("chatSend", detail => {
+            ipc.broadcastIf({type: "chatSend", content: detail}, client => client.listening.chat);
+        })
+        .on("privateChat", detail => {
+            ipc.broadcastIf({type: "privateChat", content: detail}, client => client.listening.privateChat);
+        })
+        .on("removeUser", user => {
+            ipc.broadcastIf({type: "removeUser", content: user.id}, client => client.listening.removeUser);
+            ipc.broadcastIf({type: "userCount", content: this.getUserCount() - 1}, client => client.listening.userCount);
         });
     }
 }

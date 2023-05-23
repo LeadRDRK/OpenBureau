@@ -321,19 +321,6 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             return content;
         });
 
-        if (state.ipc) {
-            state.ipc.broadcastIf({
-                type: "newUser",
-                content: {
-                    id: ss.id,
-                    name, avatar,
-                    state: UserState.ACTIVE,
-                    bcId,
-                    address: ss.address
-                }
-            }, client => client.listening.newUser);
-            state.ipc.broadcastIf({type: "userCount", content: userCount}, client => client.listening.userCount);
-        }
         break;
     }
 
@@ -377,11 +364,6 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 user.name = newName;
                 user.emit("nameChange");
                 Log.info(`${oldName} changed their name to ${user.name}`);
-
-                if (state.ipc)
-                    state.ipc.broadcastIf({type: "nameChange", content: {id: ss.id, name: newName}},
-                                          client => client.listening.nameChange);
-
                 break;
             }
 
@@ -392,11 +374,6 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 user.avatar = newAvatar;
                 user.emit("avatarChange");
                 Log.info(`${user.name} changed their avatar to ${user.avatar}`);
-
-                if (state.ipc)
-                    state.ipc.broadcastIf({type: "avatarChange", content: {id: ss.id, avatar: newAvatar}},
-                                          client => client.listening.avatarChange);
-                
                 break;
             }
 
@@ -433,16 +410,12 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
 
                 if (state.listenerCount("chatSend")) {
                     // Create an object for the event handlers to modify
-                    let detail = { message };
+                    let detail = { id: ss.id, message };
                     state.emit("chatSend", detail);
                     message = detail.message;
                 }
 
                 Log.info(`[CHAT] ${message}`);
-
-                if (state.ipc)
-                    state.ipc.broadcastIf({type: "chat", content: {id: ss.id, message}}, client => client.listening.chat);
-
                 break;
             }
 
@@ -467,7 +440,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                     return i;
                 
                 if (state.listenerCount("privateChat")) {
-                    let detail = { message };
+                    let detail = { from: fromBcId, to: bcId, message };
                     state.emit("privateChat", detail);
                     message = detail.message;
                 }
@@ -478,10 +451,6 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                     else
                         Log.info(`[PCHAT] ${message}`);
                 }
-
-                if (state.ipc)
-                    state.ipc.broadcastIf({type: "privateChat", content: {from: fromBcId, to: bcId, message}},
-                                          client => client.listening.privateChat);
 
                 break;
             }
@@ -548,9 +517,6 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             user.state = value;
             user.emit("stateChange");
             Log.verbose(`${user.name}'s state changed to ${UserState[value]}`);
-
-            if (state.ipc)
-                state.ipc.broadcastIf({type: "stateChange", content: {id: ss.id, state: value}}, client => client.listening.stateChange);
         }
         else
             Log.verbose(`Unknown user state ${value}`);

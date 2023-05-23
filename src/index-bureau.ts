@@ -105,6 +105,7 @@ function main() {
     if (IPC_SOCKET) {
         state.ipc = new IpcServer(ipcHandlers, state);
         state.ipc.init(IPC_SOCKET, () => Log.info(`IPC socket listening at ${IPC_SOCKET}`));
+        state.initIpcEvents();
     }
 
     var server = Utils.createTCPServer(PORT, HOST, listener);
