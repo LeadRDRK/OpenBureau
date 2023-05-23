@@ -33,8 +33,7 @@ n:I HATE SAPARI!!!!
     - External TCP connections are always blocked.
 - `NO_REPL`: Disable the REPL. Value is a boolean.
 - `NO_MULTI`: Disallow multiple connections from the same client. Value is a boolean.
-- `AURA_RADIUS`: The radius of the aura, or how far away each user can be seen. Set to 0 to disable the aura system. Default: 0.
-    - This property is currently non-functioning. Setting it to a non-zero value will make users unable to see each other.
+- `AURA_RADIUS`: The radius of the aura, or how far away can a user be seen by other users. Set to 0 to disable the aura system. Default: 0.
 - `USER_TIMEOUT`: How long it takes before the server disconnects from a client if they don't identify themselves, in milliseconds. Default: 10000
 - `LOG_PRIVATE_CHAT`: Log private chat messages. Value is a boolean. If `VERBOSE` is enabled, special message values will also be logged.
 - `LOG_TAG`: Tag to append onto log messages. Useful for identifying log messages from multiple servers using the same output.
