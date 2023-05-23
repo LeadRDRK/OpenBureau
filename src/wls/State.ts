@@ -66,7 +66,8 @@ export class State {
                     IPC_SOCKET: socketPath,
                     NO_BANLIST: "1",
                     LOG_TAG: id.toString(),
-                    NO_REPL: "1"
+                    NO_REPL: "1",
+                    WORLD_NAME: world
                 },
                 stdio: ["ignore", "pipe", "inherit", "ipc"]
             })

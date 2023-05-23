@@ -1,5 +1,6 @@
 import { Log } from ".";
 import fs from "node:fs";
+import assert from "node:assert";
 
 let entries: {[key: string]: string} = {};
 
@@ -43,8 +44,30 @@ function isEnabled(key: string): boolean {
     return enabledCache[key];
 }
 
+function getArray(name: string): any[] | undefined;
+function getArray(name: string, defaultValue: any[]): any[];
+function getArray(name: string, defaultValue?: any[]) {
+    const value = Config.get(name);
+    if (value) {
+        try {
+            const arr = JSON.parse(value);
+            if (!Array.isArray(arr)) {
+                return Log.error(`Invalid value for '${name}' (expected a JSON array)`);
+            }
+            return arr;
+        }
+        catch (e) {
+            Log.error(`Failed to parse '${name}'`);
+            Log.error(e);
+        }
+    }
+
+    return defaultValue;
+}
+
 export const Config = {
     loadFile,
     get,
-    isEnabled
+    isEnabled,
+    getArray
 }

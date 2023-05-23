@@ -87,19 +87,9 @@ function main() {
     assert(Number.isInteger(MAX_CONN) && MAX_CONN >= 0, "Invalid max connection count");
     assert(CLIENT_TIMEOUT >= 0, "Invalid client timeout value");
 
-    const worldWlValue = Config.get("WORLD_WHITELIST");
-    if (worldWlValue) {
-        try {
-            const arr = JSON.parse(worldWlValue);
-            assert(Array.isArray(arr), "Invalid world whitelist value (expected a JSON array)");
-            WORLD_WHITELIST = new Set(arr);
-        }
-        catch (e) {
-            Log.error("Failed to parse world whitelist value");
-            Log.error(e);
-            return;
-        }
-    }
+    const worldWlArr = Config.getArray("WORLD_WHITELIST");
+    if (worldWlArr)
+        WORLD_WHITELIST = new Set(worldWlArr);
 
     state = new State;
 

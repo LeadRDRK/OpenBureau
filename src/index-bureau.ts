@@ -2,7 +2,8 @@ import net from "node:net";
 import fs from "node:fs";
 import assert from "assert";
 import { Log, Config, Repl, BanList, Utils } from "./core";
-import { Protocol, State, SocketState, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList, ipcHandlers } from "./bureau";
+import { Protocol, State, SocketState, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList, ipcHandlers, PluginManager } from "./bureau";
+//import Plugins from "./plugins";
 import { IpcServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
 
@@ -118,12 +119,25 @@ function main() {
         repl.start(state);
     }
 
+    var plugins = Config.getArray("PLUGINS");
+    if (plugins) {
+        plugins.forEach(name => {
+            if (typeof name != "string") return;
+            PluginManager.add(name);
+            PluginManager.enable(name, state);
+        });
+    }
+
     if (process.send)
         process.send("ready");
 }
 
 function cleanup() {
     Log.resume(); // Might have been paused during an active prompt
+
+    PluginManager.getPluginNames().forEach(name => {
+        PluginManager.disable(name);
+    });
 
     // For unix sockets
     if (IPC_SOCKET && fs.existsSync(IPC_SOCKET))
