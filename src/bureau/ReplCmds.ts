@@ -1,4 +1,4 @@
-import { State, BureauUtils } from ".";
+import { State, BureauUtils, PluginManager } from ".";
 import { Log, Utils, UserState } from "../core";
 import net from "node:net";
 
@@ -28,10 +28,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
     },
 
     getids(state: State, args: string[]) {
-        if (args.length < 1) {
-            Log.error("Insufficient arguments to 'getids'");
-            return;
-        }
+        if (argLengthCheck(args, 1, "getids")) return;
         let name = args.join(" ");
         let ids: number[] = [];
         for (const id in state.users) {
@@ -49,10 +46,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
     },
 
     teleport(state: State, args: string[]) {
-        if (args.length < 2) {
-            Log.error("Insufficient arguments to 'teleport'");
-            return;
-        }
+        if (argLengthCheck(args, 2, "teleport")) return;
         const id1 = +args[0];
         const id2 = +args[1];
         if (!(id1 in state.users && id2 in state.users)) {
@@ -64,10 +58,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
     },
 
     kick(state: State, args: string[]) {
-        if (args.length < 1) {
-            Log.error("Insufficient arguments to 'kick'");
-            return;
-        }
+        if (argLengthCheck(args, 1, "kick")) return;
 
         let id = +args[0];
         if (!(id in state.users)) {
@@ -81,10 +72,7 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
     },
 
     ban(state: State, args: string[]) {
-        if (args.length < 1) {
-            Log.error("Insufficient arguments to 'ban'");
-            return;
-        }
+        if (argLengthCheck(args, 1, "ban")) return;
         let ip = args[0];
         if (!net.isIPv4(ip)) {
             // Get user ip
@@ -109,17 +97,43 @@ export const replCmds: {[key: string]: (state: State, args: string[]) => void} =
     unban: Utils.unbanCmd,
 
     banname(state: State, args: string[]) {
-        if (args.length < 1) {
-            Log.error("Insufficient arguments to 'banname'");
-            return;
-        }
+        if (argLengthCheck(args, 1, "banname")) return;
         BureauUtils.banName(state, args[0]);
     },
 
     unbanname: Utils.unbanNameCmd,
 
     bannedips: Utils.bannedIpsCmd,
-    bannednames: Utils.bannedNamesCmd
+    bannednames: Utils.bannedNamesCmd,
+
+    addplugin(_, args: string[]) {
+        if (argLengthCheck(args, 1, "addplugin")) return;
+        var name = args[0];
+        if (PluginManager.add(name))
+            Log.info(`Plugin "${name}" added`);
+    },
+
+    enableplugin(state: State, args: string[]) {
+        if (argLengthCheck(args, 1, "enableplugin")) return;
+        PluginManager.enable(args[0], state);
+    },
+
+    disableplugin(_, args: string[]) {
+        if (argLengthCheck(args, 1, "disableplugin")) return;
+        PluginManager.disable(args[0]);
+    },
+
+    plugins() {
+        console.table(PluginManager.getPluginStates());
+    }
+}
+
+function argLengthCheck(args: string[], required: number, name: string) {
+    if (args.length < required) {
+        Log.error(`Insufficient arguments for '${name}' (expected ${required}, got ${args.length})`);
+        return true;
+    }
+    return false;
 }
 
 export const replCmdAliases: {[key: string]: string} = {

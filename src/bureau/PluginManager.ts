@@ -29,6 +29,10 @@ function add(name: string): boolean {
 
 function enable(name: string, state: State): boolean {
     var plugin = plugins[name];
+    if (!plugin) {
+        Log.error(`PM: Plugin "${name}" does not exist`);
+        return false;
+    }
     if (plugin.enabled) return true;
 
     if (plugin.init(state)) {
@@ -45,6 +49,10 @@ function enable(name: string, state: State): boolean {
 
 function disable(name: string) {
     var plugin = plugins[name];
+    if (!plugin) {
+        Log.error(`PM: Plugin "${name}" does not exist`);
+        return;
+    }
     if (!plugin.enabled) return;
 
     plugin.uninit();
@@ -57,9 +65,16 @@ function getPluginNames() {
     return Object.keys(plugins);
 }
 
+function getPluginStates() {
+    return Object.entries(plugins).map(([name, plugin]) => {
+        return {name, enabled: plugin.enabled}
+    });
+}
+
 export const PluginManager = {
     add,
     enable,
     disable,
-    getPluginNames
+    getPluginNames,
+    getPluginStates
 };
