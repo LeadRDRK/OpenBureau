@@ -1,12 +1,20 @@
 import net from "node:net";
 import crypto from "node:crypto"
 import { Protocol, MessageArray, User, BureauUtils } from ".";
-import { Log, IdSet, Config } from "../core";
+import { Log, IdSet, Config, TypedEventEmitter } from "../core";
 import { IpcServer } from "../ipc";
+import EventEmitter from "node:events";
 
 export type BcMsgCallback = (user: User) => MessageArray | undefined;
 
-export class State {
+type StateEvents = {
+    newUser: (user: User) => void;
+    applSpecific: (args: string[]) => void;
+    chatSend: (detail: { message: string }) => void;
+    privateChat: (detail: { message: string }) => void;
+}
+
+export class State extends (EventEmitter as new () => TypedEventEmitter<StateEvents>) {
     users: {[key: number]: User} = {};
     sockets: {[key: number]: net.Socket} = {};
     idSet = new IdSet;

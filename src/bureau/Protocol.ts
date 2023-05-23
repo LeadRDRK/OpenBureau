@@ -287,13 +287,8 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
         }
 
         let bcId = await state.generateBcId();
-        state.users[ss.id] = {
-            id: ss.id,
-            ss, name, avatar,
-            state: UserState.ACTIVE,
-            bcId,
-            auras: new Set<number>([bcId]) // Add user to their own aura
-        };
+        let user = state.users[ss.id] = new User(ss, name, avatar, bcId);
+        state.emit("newUser", user);
         
         const joinMsg = `${name} has joined the server`;
         Log.info(joinMsg);
@@ -366,6 +361,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             // Content: 2 strings, and another bcId value at the end
             let args = readStrings(content.subarray(10), 2);
             if (args.length != 2) break;
+            state.emit("applSpecific", args);
         }
         else {
             // All other types must be user-specific
@@ -379,6 +375,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
 
                 const oldName = user.name;
                 user.name = newName;
+                user.emit("nameChange");
                 Log.info(`${oldName} changed their name to ${user.name}`);
 
                 if (state.ipc)
@@ -393,6 +390,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 if (!newAvatar) return i;
 
                 user.avatar = newAvatar;
+                user.emit("avatarChange");
                 Log.info(`${user.name} changed their avatar to ${user.avatar}`);
 
                 if (state.ipc)
@@ -414,6 +412,9 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                     m[i] = readInt32Float(cData, i * 4);
                 }
                 readPosition(cData, 36, user);
+                
+                user.emit("transformUpdate");
+                user.emit("positionUpdate");
                 break;
             }
 
@@ -422,12 +423,20 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
                 if (!cd) return i;
 
                 user.characterData = cd;
+                user.emit("characterUpdate");
                 break;
             }
 
             case CDataType.CHAT_SEND: {
-                const [message] = readStrings(cData, 1);
+                let [ message ] = readStrings(cData, 1);
                 if (!message) return i;
+
+                if (state.listenerCount("chatSend")) {
+                    // Create an object for the event handlers to modify
+                    let detail = { message };
+                    state.emit("chatSend", detail);
+                    message = detail.message;
+                }
 
                 Log.info(`[CHAT] ${message}`);
 
@@ -452,10 +461,16 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
             case CDataType.PRIVATE_CHAT: {
                 const idType = cData.readUint16LE(0);
                 const fromBcId = cData.readUint16LE(2);
-                const [message] = readStrings(cData.subarray(4), 1);
+                let [message] = readStrings(cData.subarray(4), 1);
 
                 if (!message || idType != 0x00 || fromBcId != user?.bcId)
                     return i;
+                
+                if (state.listenerCount("privateChat")) {
+                    let detail = { message };
+                    state.emit("privateChat", detail);
+                    message = detail.message;
+                }
                 
                 if (Config.isEnabled("LOG_PRIVATE_CHAT")) {
                     if (message.startsWith("%%"))
@@ -531,6 +546,7 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
         if (value in UserState) {
             let user = state.users[ss.id];
             user.state = value;
+            user.emit("stateChange");
             Log.verbose(`${user.name}'s state changed to ${UserState[value]}`);
 
             if (state.ipc)
@@ -579,6 +595,7 @@ function processPosUpdate(state: State, ss: SocketState, data: Buffer, i: number
     }
 
     var position = readPosition(data, 13, user);
+    user.emit("positionUpdate");
 
     state.broadcast(other => {
         if (other.id == user.id) return;
