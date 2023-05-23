@@ -1,30 +1,15 @@
 import net from "node:net";
-import { Log } from "../core";
+import { Log, TypedEventEmitter } from "../core";
 import { IpcData, isIpcData } from ".";
 import { EventEmitter } from "node:events";
 
 const TAG_TIMEOUT = 5000;
 
-export declare interface IpcClient {
-    /**
-     * events.EventEmitter
-     *   1. data
-     */
-    addListener(event: string, listener: (...args: any[]) => void): this;
-    addListener(event: "data", listener: (data: IpcData) => void): this;
-    emit(event: string | symbol, ...args: any[]): boolean;
-    emit(event: "data", data: IpcData): boolean;
-    on(event: string, listener: (...args: any[]) => void): this;
-    on(event: "data", listener: (data: IpcData) => void): this;
-    once(event: string, listener: (...args: any[]) => void): this;
-    once(event: "data", listener: (data: IpcData) => void): this;
-    prependListener(event: string, listener: (...args: any[]) => void): this;
-    prependListener(event: "data", listener: (data: IpcData) => void): this;
-    prependOnceListener(event: string, listener: (...args: any[]) => void): this;
-    prependOnceListener(event: "data", listener: (data: IpcData) => void): this;
+type IpcClientEvents = {
+    data: (...args: any[]) => void;
 }
 
-export class IpcClient extends EventEmitter {
+export class IpcClient extends (EventEmitter as new () => TypedEventEmitter<IpcClientEvents>) {
     socket: net.Socket;
     private tagListeners: {[key: string]: (data: IpcData) => void} = {};
 
