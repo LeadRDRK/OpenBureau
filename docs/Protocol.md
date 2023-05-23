@@ -128,9 +128,9 @@ The first thing that the client sends after receiving the server's `hello` reply
 | Username | ~ | string |
 | Avatar path | ~ | string |
 
-The avatar path is a relative path based on where the avatar is located in the `world` folder of the Community Place Browser. Example: `avtwrl/01cat.wrl`
+The avatar path is a relative path based on where the avatar is located in the current world's directory, which could be a local or a remote directory (served over HTTP and loaded by Netscape). Example: `avtwrl/01cat.wrl`
 
-After receiving the `CMSG_NEW_USER` message, the server will proceed to broadcast [`SMSG_USER_JOINED`](#smsg_user_joined) to all clients connected to it (including the current client). The server will also send [`SMSG_CLIENT_ID`](#smsg_client_id), [`SMSG_UNNAMED_1`](#smsg_unnamed_1), [`SMSG_USER_JOINED`](#smsg_user_joined) and [`SMSG_BROADCAST_ID`](#smsg_broadcast_id) messages back to the client.
+After receiving the `CMSG_NEW_USER` message, the server will proceed to broadcast [`SMSG_USER_COUNT`](#smsg_user_count) to all clients connected to it. The server will also send [`SMSG_CLIENT_ID`](#smsg_client_id), [`SMSG_UNNAMED_1`](#smsg_unnamed_1), [`SMSG_USER_JOINED`](#smsg_user_joined) and [`SMSG_BROADCAST_ID`](#smsg_broadcast_id) messages back to the current client.
 
 ## SMSG_CLIENT_ID
 Used to send the client ID. It can be identical to the connection ID.
