@@ -40,4 +40,6 @@ n:I HATE SAPARI!!!!
 - `LOG_TAG`: Tag to append onto log messages. Useful for identifying log messages from multiple servers using the same output.
 - `WELCOME_MSG`: Message to send to users when they first join the server. Does not contain the system chat prefix. Newlines can be included in the message by using `\n`
 - `SYSTEM_CHAT_PREFIX`: The system chat prefix when sending system messages using the `chat` command. Default: `[System] `
+- `WORLD_NAME`: This property is set by the WLS server when launching a new Bureau to allow it to identify which world it belongs to. Intended for use in plugins.
+- `PLUGINS`: A JSON array of strings containing the names of the modules to load from the `plugins` directory.
 - `VERBOSE`: Enable verbose logging. Value is a boolean.
