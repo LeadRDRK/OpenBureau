@@ -17,9 +17,35 @@ export class Vector3 {
         this.z = z;
     }
 
+    magnitude() {
+        let { x, y, z } = this;
+        return Math.sqrt(x * x + y * y + z * z);
+    }
+
     distance(v: Vector3) {
         let s = this.subtract(v);
-        return Math.sqrt(s.x * s.x + s.y * s.y + s.z * s.z);
+        return s.magnitude();
+    }
+
+    dot(v: Vector3) {
+        return (this.x * v.x + this.y * v.y + this.z * v.z);
+    }
+
+    cross(v: Vector3) {
+        let { x, y, z } = this;
+        return new Vector3(
+            (y * v.z) - (z * v.y),
+            (z * v.x) - (x * v.z),
+            (x * v.y) - (y * v.x)
+        );
+    }
+
+    add(v: Vector3) {
+        return new Vector3(
+            this.x + v.x,
+            this.y + v.y,
+            this.z + v.z
+        );
     }
 
     subtract(v: Vector3) {
@@ -30,7 +56,33 @@ export class Vector3 {
         );
     }
 
-    // TODO
+    multiply(v: Vector3) {
+        return new Vector3(
+            this.x * v.x,
+            this.y * v.y,
+            this.z * v.z
+        );
+    }
+
+    divide(v: Vector3) {
+        return new Vector3(
+            this.x / v.x,
+            this.y / v.y,
+            this.z / v.z
+        );
+    }
+
+    lerp(v: Vector3, a: number) {
+        return new Vector3(
+            numLerp(this.x, v.x, a),
+            numLerp(this.y, v.y, a),
+            numLerp(this.z, v.z, a)
+        );
+    }
+}
+
+function numLerp(v0: number, v1: number, t: number) {
+    return (1 - t) * v0 + t * v1;
 }
 
 export class Matrix3 {
