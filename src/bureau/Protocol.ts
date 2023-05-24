@@ -602,9 +602,6 @@ function updateUserPosition(state: State, user: User) {
 
     state.broadcast(other => {
         if (other.id == user.id) return;
-        let msgs = auraCheck(user, other);
-        if (msgs) return msgs;
-        
         if (other.auras.has(bcId))
             return [{id1: other.id, id2: other.id, bcId, position: position!}];
     });
