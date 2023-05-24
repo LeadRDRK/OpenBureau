@@ -3,7 +3,6 @@ import fs from "node:fs";
 import assert from "assert";
 import { Log, Config, Repl, BanList, Utils } from "./core";
 import { Protocol, State, SocketState, SYSTEM_BCID, replCmds, replCmdAliases, replCmdList, ipcHandlers, PluginManager } from "./bureau";
-//import Plugins from "./plugins";
 import { IpcServer } from "./ipc";
 import nodeCleanup from "node-cleanup";
 
