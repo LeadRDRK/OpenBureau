@@ -1,5 +1,5 @@
 import { Vector3, UserState, Matrix3, TypedEventEmitter } from "../core";
-import { SocketState } from ".";
+import { Protocol, SocketState, State } from ".";
 import EventEmitter from "node:events";
 
 type UserEvents = {
@@ -37,5 +37,26 @@ export class User extends (EventEmitter as new () => TypedEventEmitter<UserEvent
         this.state = UserState.ACTIVE;
         this.bcId = bcId;
         this.auras = new Set<number>([bcId]);
+    }
+
+    updatePosition(state: State) {
+        Protocol.updateUserPosition(state, this);
+    }
+
+    updateTransform(state: State) {
+        Protocol.updateUserTransform(state, this);
+    }
+
+    updateCharacterData(state: State) {
+        if (!this.characterData) return;
+        let characterData = this.characterData;
+        state.broadcast(other => {
+            if (other.id == this.id || !other.auras.has(this.bcId)) return;
+            return [ Protocol.buildCharUpdateMsg(other.id, this.bcId, characterData) ];
+        });
+    }
+
+    isUserWithinRadius(user: User, radius: number) {
+        return this.position && user.position && this.position.distance(user.position) < radius;
     }
 }

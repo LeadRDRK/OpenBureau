@@ -5,7 +5,7 @@ import { Log, IdSet, Config, TypedEventEmitter } from "../core";
 import { IpcServer } from "../ipc";
 import EventEmitter from "node:events";
 
-export type BcMsgCallback = (user: User) => MessageArray | undefined;
+export type BcMsgCallback = (user: User) => MessageArray | void;
 
 type StateEvents = {
     newUser: (user: User) => void;

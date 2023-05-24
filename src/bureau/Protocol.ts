@@ -177,7 +177,7 @@ function buildCharUpdateMsg(id: number, bcId: number, characterData: string): Ge
     };
 }
 
-function buildTransformContent(transform: Matrix3, position: Vector3) {
+function buildTransformUpdateMsg(id: number, bcId: number, transform: Matrix3, position: Vector3) {
     let buf = Buffer.allocUnsafe(48);
     let j = 0;
     for (let i = 0; i < 9; ++i) {
@@ -186,7 +186,15 @@ function buildTransformContent(transform: Matrix3, position: Vector3) {
     j = writeInt32Float(buf, position.x, j);
     j = writeInt32Float(buf, position.y, j);
     j = writeInt32Float(buf, position.z, j);
-    return buf;
+
+    let content = buildCommonData({
+        idType: 0x00, bcId,
+        type: CDataType.TRANSFORM_UPDATE,
+        subtype: 1,
+        content: buf
+    });
+
+    return { id1: id, id2: id, type: Opcode.MSG_COMMON, content }
 }
 
 function buildUserInitMsgs(id: number, user: User): MessageArray {
@@ -199,15 +207,8 @@ function buildUserInitMsgs(id: number, user: User): MessageArray {
     if (user.position) {
         msgs.push({id1: id, id2: id, bcId, position: user.position});
 
-        if (user.transform) {
-            let rtContent = buildCommonData({
-                idType: 0x00, bcId, 
-                type: CDataType.TRANSFORM_UPDATE,
-                subtype: 1,
-                content: buildTransformContent(user.transform, user.position)
-            });
-            msgs.push({id1: id, id2: id, type: Opcode.MSG_COMMON, content: rtContent});
-        }
+        if (user.transform)
+            msgs.push(buildTransformUpdateMsg(id, bcId, user.transform, user.position));
     }
 
     if (user.characterData)
@@ -466,9 +467,17 @@ async function processGeneralMsg(state: State, ss: SocketState, data: Buffer, i:
         case 0:
         case 1:
             // Broadcast to other clients
-            state.broadcast(user => {
-                if (user.id == ss.id) return;
-                return [{id1: user.id, id2: user.id, type: Opcode.MSG_COMMON, content}]
+            state.broadcast(other => {
+                if (other.id == ss.id) return;
+                if (type_ == CDataType.TRANSFORM_UPDATE) {
+                    let msgs = auraCheck(user!, other);
+                    if (msgs) return msgs;
+                }
+
+                if (idType != 0xFFFF && !other.auras.has(bcId))
+                    return;
+
+                return [{id1: other.id, id2: other.id, type: Opcode.MSG_COMMON, content}];
             });
             break;
 
@@ -539,7 +548,6 @@ function readPosition(data: Buffer, offset: number, user: User) {
     let z = readInt32Float(data, offset + 8);
     if (!user.position) user.position = new Vector3;
     user.position.set(x, y, z);
-    return user.position;
 }
 
 function processPosUpdate(state: State, ss: SocketState, data: Buffer, i: number): number {
@@ -560,33 +568,60 @@ function processPosUpdate(state: State, ss: SocketState, data: Buffer, i: number
         return i;
     }
 
-    var position = readPosition(data, 13, user);
+    readPosition(data, 13, user);
     user.emit("positionUpdate");
+    updateUserPosition(state, user);
+    
+    return i + 27;
+}
+
+function auraCheck(user: User, other: User) {
+    let bcId = user.bcId;
+    if (!auraRadius || user.isUserWithinRadius(other, auraRadius)) {
+        if (!other.auras.has(bcId)) {
+            other.auras.add(bcId);
+            user.auras.add(other.bcId);
+            // Send user init data to both of them
+            user.ss.write(buildUserInitMsgs(user.id, other));
+            return buildUserInitMsgs(other.id, user);
+        }
+    }
+    else if (other.auras.has(bcId)) {
+        other.auras.delete(bcId);
+        user.auras.delete(other.bcId);
+        user.ss.write([
+            {id1: user.id, id2: user.id, type: Opcode.SMSG_USER_LEFT, content: userLeftContent(other.bcId)}
+        ]);
+        return [{id1: other.id, id2: other.id, type: Opcode.SMSG_USER_LEFT, content: userLeftContent(bcId)}];
+    }
+}
+
+function updateUserPosition(state: State, user: User) {
+    let { bcId, position } = user;
+    if (!position) return;
 
     state.broadcast(other => {
         if (other.id == user.id) return;
-        if (!auraRadius || (other.position && position.distance(other.position) < auraRadius)) {
-            if (!other.auras.has(bcId)) {
-                other.auras.add(bcId);
-                user.auras.add(other.bcId);
-                // Send user init data to both of them
-                user.ss.write(buildUserInitMsgs(user.id, other));
-                return buildUserInitMsgs(other.id, user);
-            }
-            else
-                return [{id1: other.id, id2: other.id, bcId, position}];
-        }
-        else if (other.auras.has(bcId)) {
-            other.auras.delete(bcId);
-            user.auras.delete(other.bcId);
-            user.ss.write([
-                {id1: user.id, id2: user.id, type: Opcode.SMSG_USER_LEFT, content: userLeftContent(other.bcId)}
-            ]);
-            return [{id1: other.id, id2: other.id, type: Opcode.SMSG_USER_LEFT, content: userLeftContent(bcId)}];
-        }
+        let msgs = auraCheck(user, other);
+        if (msgs) return msgs;
+        
+        if (other.auras.has(bcId))
+            return [{id1: other.id, id2: other.id, bcId, position: position!}];
     });
-    
-    return i + 27;
+}
+
+function updateUserTransform(state: State, user: User) {
+    let { bcId, position, transform } = user;
+    if (!position || !transform) return;
+
+    state.broadcast(other => {
+        if (other.id == user.id) return;
+        let msgs = auraCheck(user, other);
+        if (msgs) return msgs;
+        
+        if (other.auras.has(bcId))
+            return [ buildTransformUpdateMsg(other.id, bcId, transform!, position!) ];
+    });
 }
 
 async function processRequest(state: State, ss: SocketState, data: Buffer) {
@@ -645,9 +680,15 @@ export const Protocol = {
     Opcode,
     init,
     buildPacket,
+    buildCommonData,
+    buildCharUpdateMsg,
+    buildTransformUpdateMsg,
+    buildUserInitMsgs,
     buildChatSendMsg,
     processRequest,
     userCountContent,
     userJoinedContent,
-    userLeftContent
+    userLeftContent,
+    updateUserPosition,
+    updateUserTransform
 }
