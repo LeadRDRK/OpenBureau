@@ -27,7 +27,7 @@ function add(name: string): boolean {
     return true;
 }
 
-function enable(name: string, state: State): boolean {
+async function enable(name: string, state: State): Promise<boolean> {
     var plugin = plugins[name];
     if (!plugin) {
         Log.error(`PM: Plugin "${name}" does not exist`);
@@ -35,7 +35,7 @@ function enable(name: string, state: State): boolean {
     }
     if (plugin.enabled) return true;
 
-    if (plugin.init(state)) {
+    if (await plugin.init(state)) {
         Log.info(`PM: Plugin "${name}" initialized`);
         plugin.enabled = true;
     }

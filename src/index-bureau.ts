@@ -78,7 +78,7 @@ function listener(socket: net.Socket) {
     }, USER_TIMEOUT);
 }
 
-function main() {
+async function main() {
     Config.loadFile("config.txt");
     BanList.loadFile();
 
@@ -107,6 +107,16 @@ function main() {
         state.initIpcEvents();
     }
 
+    var plugins = Config.getArray("PLUGINS");
+    if (plugins) {
+        for (let i = 0; i < plugins.length; ++i) {
+            let name = plugins[i];
+            if (typeof name != "string") return;
+            PluginManager.add(name);
+            await PluginManager.enable(name, state);
+        };
+    }
+
     var server = Utils.createTCPServer(PORT, HOST, listener);
     server.maxConnections = MAX_CONN;
 
@@ -117,15 +127,6 @@ function main() {
         state.bcIdSet.add(SYSTEM_BCID);
         const repl = new Repl(replCmds, replCmdAliases, replCmdList);
         repl.start(state);
-    }
-
-    var plugins = Config.getArray("PLUGINS");
-    if (plugins) {
-        plugins.forEach(name => {
-            if (typeof name != "string") return;
-            PluginManager.add(name);
-            PluginManager.enable(name, state);
-        });
     }
 
     if (process.send)
